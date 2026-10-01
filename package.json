@@ -1,0 +1,46 @@
+{
+  "name": "mandarin-grove",
+  "description": "A pocket-sized Mandarin story and spaced-review garden",
+  "license": "0BSD",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@expo/metro-runtime": "~57.0.16",
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "~57.0.26",
+    "expo-haptics": "~57.0.3",
+    "expo-linear-gradient": "~57.0.2",
+    "expo-speech": "~57.0.3",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-web": "^0.21.2"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@testing-library/dom": "^10.4.2",
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^26.6.3",
+    "@types/react": "~19.2.2",
+    "jsdom": "^30.1.1",
+    "prettier": "^3.9.9",
+    "sharp": "^0.35.5",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && expo export --platform web",
+    "test": "tsx scripts/learning.test.ts",
+    "test:dom": "tsx scripts/dom-smoke.ts",
+    "test:web": "tsx scripts/web-smoke.ts",
+    "format": "prettier --write App.tsx src scripts"
+  }
+}
