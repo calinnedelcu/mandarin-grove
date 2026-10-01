@@ -1,0 +1,26 @@
+[
+  {
+    "hanzi": "后面",
+    "selectedPinyin": "hòu miàn",
+    "sourcePinyin": ["hòu mian"],
+    "reason": "Beginner dictionary form; neutral syllables and standard regional pronunciation can differ."
+  },
+  {
+    "hanzi": "小姐",
+    "selectedPinyin": "xiǎo jiě",
+    "sourcePinyin": ["xiǎo jie"],
+    "reason": "Beginner dictionary form; neutral syllables and standard regional pronunciation can differ."
+  },
+  {
+    "hanzi": "右边",
+    "selectedPinyin": "yòu biān",
+    "sourcePinyin": ["yòu bian"],
+    "reason": "Beginner dictionary form; neutral syllables and standard regional pronunciation can differ."
+  },
+  {
+    "hanzi": "左边",
+    "selectedPinyin": "zuǒ biān",
+    "sourcePinyin": ["zuǒ bian"],
+    "reason": "Beginner dictionary form; neutral syllables and standard regional pronunciation can differ."
+  }
+]

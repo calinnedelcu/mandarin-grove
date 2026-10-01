@@ -1,36 +1,74 @@
 # Validation
 
-Completed October 1, 2026.
+Completed **October 1, 2026**, inside this project. No Android regeneration, runtime dependency installation or git commit was performed.
 
-## Passed
+## Required checks
 
-- `npx tsc --noEmit`: strict TypeScript checks for application and verification scripts.
-- `npm test`: 72-word / six-lesson content integrity, tone detection, one-minute retry, day-based intervals, streak rollover and gaps, local-date keys, saved-progress parsing, and unique valid choices for all quiz modes.
-- `npx expo export --platform web`: successful production web bundle in `dist/`.
-- `npx tsx scripts/dom-smoke.ts`: executes the exported app in jsdom, opens a lesson and its dictionary overlay, saves a word, completes a spaced review, finishes eight mixed quiz questions, and checks XP, streak, lesson completion, and AsyncStorage contents. Speech is stubbed; no actual audio is validated by this test.
+| Command                          | Result                                                                                                                                          |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npx tsc --noEmit`               | **Passed.** Strict checking of app and verification scripts. Generated exports/native directories are explicitly excluded.                      |
+| `npm test`                       | **Passed.** Existing scheduling/streak/progress/quiz assertions retained and expanded for the new curriculum and migration.                     |
+| `npx expo export --platform web` | **Passed.** Production `dist/` export; approximately 1.6 MB JavaScript bundle, with bundled content and local character data.                   |
+| `npm run test:dom`               | **Passed.** Exported-app interactions, speech control fixture and persisted progress.                                                           |
+| `npm run test:web`               | **DOM fallback passed; Chromium visual checks unavailable.** Browser launch is blocked by this sandbox. This is not a real-browser visual pass. |
 
-## Reproduce exported-app checks
+## Learning/content coverage
+
+The unit suite checks **618 unique words, 42 readings, HSK 1–3 boundaries**, original IDs, marked-pinyin format, common polyphonic corrections, contextual 只, complete tappable Chinese token coverage, three comprehension formats per reading and all three levels per new story family. It checks radicals/decomposition/stroke metadata, distinct visible matching meanings, unique multiple-choice answers, exact-tone typing, pinyin tone placement, search and level recommendations. Every story sentence is checked for an answerable tile-building prompt, including quoted dialogue and Chinese punctuation.
+
+Progress tests cover one-minute retries, day-based Good/Easy intervals and cap, lapses, idempotent word saves, seven practice pools, derived strength, local-calendar streak rollover/gaps, placement suggestions, strict malformed-data rejection and migration from a genuine six-field v1 snapshot. Original XP, streak fields, completed IDs and cards survive migration; old learners are not forced through new onboarding.
+
+These checks detect consistency and many pronunciation/content errors. They do not establish pedagogical effectiveness or replace a native editorial review of all Chinese usage.
+
+## Exported-app interaction coverage
+
+The DOM test loads the actual production export and exercises:
+
+- New-user onboarding and changing level/daily goal later.
+- Story opening, word lookup/saving, immediate due review, reveal/Good and completion.
+- Eight-question mixed quiz, XP, streak and exploration persistence.
+- HSK version switching and correctly answering choice, gap and typed story comprehension.
+- Reader settings, traditional display, bookmarks and saved grammar.
+- Mandarin speech request, speed restart, sentence advance, pause and rejection of a stale cancelled callback.
+- Actionable failure when only a remote browser speech voice or a Cantonese-only voice is available.
+- Unaccented-pinyin dictionary search, character studio and stroke-demo controls.
+- Four correct sentence-building questions with distinct repeated tiles and explicit selection state, sentence-writing entry, matching completion, tone listening, tone keyboard, sprint and Zen entry points.
+- Grove Radio, skipping and pausing, rehydration in a fresh DOM instance, and old-save migration.
+
+Speech, media queries, ResizeObserver and scroll behavior are test fixtures. jsdom has no CSS animation engine, so the test explicitly supplies animation events to finish React Native Web modal transitions. No runtime errors were captured. **Actual audio, haptics, visual layout, touch tracing and CSS animation quality are not simulated.**
+
+## Reproduce
+
+From the project folder:
 
 ```sh
+export npm_config_cache="$PWD/.npm-cache"
+export __UNSAFE_EXPO_HOME_DIRECTORY="$PWD/.expo-home"
+export EXPO_NO_TELEMETRY=1
+export PLAYWRIGHT_BROWSERS_PATH="$PWD/.browser-cache"
+npx tsc --noEmit
+npm test
 npx expo export --platform web
-python3 -m http.server 8081 --directory dist
+python3 -m http.server 8081 --bind 127.0.0.1 --directory dist
 ```
 
-In another terminal in this folder:
+With that server running, use another terminal in the same folder:
 
 ```sh
-npx tsx scripts/dom-smoke.ts
+npm run test:dom
+npm run test:web
 ```
 
-A real Chromium mobile-layout and reload-persistence test is also provided:
+On a machine where Chromium is not already installed for Playwright, install it into the project cache before the web test:
 
 ```sh
 PLAYWRIGHT_BROWSERS_PATH="$PWD/.browser-cache" npx playwright install chromium
-PLAYWRIGHT_BROWSERS_PATH="$PWD/.browser-cache" npx tsx scripts/web-smoke.ts
 ```
 
-The Chromium test could not run here: macOS rejected the browser's MachPortRendezvous bootstrap registration under the execution sandbox. The in-app browser was unavailable too. Consequently visual layout, screenshot checks, and the real-browser reload test are **not claimed as passed**. jsdom verifies interactions and storage, but does not implement actual layout or device APIs.
+The full Playwright path is provided for 390-pixel mobile UI, dictionary/reader/quiz screenshots, actual mouse tracing, offline interaction after loading, persisted browser reload, and 320/1440-pixel width checks. It could not execute here: macOS rejected Chromium's **MachPortRendezvous/bootstrap registration with permission denied**. The script recognizes that specific launch restriction and reports a DOM fallback. Other launch or interaction errors still fail the test. Computer use also denied Chrome access. Consequently screenshots, responsive layout, real-browser reload and real touch/mouse tracing are **not claimed as verified**.
 
-## Phone acceptance checks
+## Physical-device acceptance still needed
 
-Use the README's Expo Go instructions. Open Today → story → a word → listen; try slow audio, complete a quiz, save a word, reveal a review card, and relaunch to confirm progress. Check listening audio with the phone unmuted, haptics, small-screen text wrapping, dictionary overlays, and Android back navigation. These physical-device checks remain unverified in this environment.
+Use an SDK-57-compatible Expo Go or native build. Confirm Mandarin voice installation and real playback at each speed, sentence sequencing/cancellation, iPhone silent-mode behavior, haptics, small-screen text wrapping, on-screen Chinese/pinyin keyboards, safe areas and Android back navigation. Trace a one-stroke and a multi-stroke character; pause/restart narration; switch story versions; finish a review and quiz; relaunch to confirm retention.
+
+Native installed learning data is local. Device speech needs an installed usable Mandarin voice; web rejects remote-only voices. Radio is foreground-only. The web export has no service worker, so offline cold-start browser loading is outside this implementation. No backend, API key, cloud AI or live news service is required for bundled learning.

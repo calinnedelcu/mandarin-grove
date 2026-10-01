@@ -14,7 +14,8 @@
         "backgroundColor": "#285E45",
         "foregroundImage": "./assets/icon.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.mandaringrove"
     },
     "web": {
       "favicon": "./assets/favicon.png"

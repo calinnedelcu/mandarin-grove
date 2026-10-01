@@ -1,0 +1,35 @@
+{
+  "researchedAt": "2026-10-01",
+  "vocabulary": {
+    "url": "https://github.com/drkameleon/complete-hsk-vocabulary",
+    "observedRevision": "7ac65bf1a6387d35f1ade478906172a19311c7f9",
+    "paths": [
+      "wordlists/exclusive/old/1.json",
+      "wordlists/exclusive/old/2.json",
+      "wordlists/exclusive/old/3.json"
+    ],
+    "license": "MIT",
+    "bundledCount": 618,
+    "sourceUniqueCount": 595,
+    "changes": "Selected common readings, concise English glosses, matching traditional forms; original word IDs retained; useful building blocks added."
+  },
+  "characters": {
+    "url": "https://github.com/skishore/makemeahanzi",
+    "observedRevision": "bddc96d41bef78427ed0e034e9f7e31d71fd1b92",
+    "paths": ["dictionary.txt", "graphics.txt"],
+    "licenses": {
+      "dictionary": "LGPL-3.0-or-later",
+      "medians": "Arphic Public License"
+    },
+    "bundledCount": 620,
+    "changes": "Subset of characters and required fields, unchanged data values."
+  },
+  "wirelingoPublicEndpoints": [
+    "https://wirelingo.com/api/blog/posts",
+    "https://wirelingo.com/api/subscription/pricing/public"
+  ],
+  "artifactSha256": {
+    "src/data/vocabulary.json": "271f015b0fe0ff7820734cf9f0b9465e52f6e077c78ce2e5010b83fa809c3b1d",
+    "src/data/characters.json": "6c5b67d25475ae3173edcf6089f3275c9b9ca8f829ebc9503c7ef555d32691d9"
+  }
+}
