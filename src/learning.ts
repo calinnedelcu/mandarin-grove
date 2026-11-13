@@ -15,6 +15,8 @@ export type Settings = {
   traditional: boolean;
   fontSize: number;
   spacious: boolean;
+  /** Show each word's meaning under it while reading. */
+  gloss: boolean;
   rate: number;
   /** Use the bundled studio recordings where one exists. */
   studioVoice: boolean;
@@ -69,6 +71,7 @@ export const defaultSettings: Settings = {
   traditional: false,
   fontSize: 27,
   spacious: false,
+  gloss: true,
   rate: 0.85,
   studioVoice: true,
   sounds: true,
@@ -368,6 +371,7 @@ export function parseProgress(raw: string): Progress {
       "echo",
       "traditional",
       "spacious",
+      "gloss",
       "studioVoice",
       "sounds",
     ].every((k) => typeof settings[k as keyof Settings] === "boolean")

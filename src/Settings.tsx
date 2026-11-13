@@ -17,6 +17,7 @@ import { Button, Chip, IconButton, Section } from "./ui";
 const toggles = [
   ["pinyin", "Pinyin above words"],
   ["translation", "English under sentences"],
+  ["gloss", "Meaning under each word"],
   ["echo", "Word echo colours"],
   ["traditional", "Traditional characters"],
 ] as const;

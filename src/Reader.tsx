@@ -23,6 +23,10 @@ import { WordSheet } from "./WordSheet";
 
 const rates = [0.65, 0.85, 1, 1.15];
 
+/** The first sense of a word, short enough to sit under it. */
+function gloss(word: Word) {
+  return word.meaning.split(/[;(]/)[0].trim();
+}
 type Phrase = { text: string; word?: Word; tail: string };
 /** A word with the punctuation that follows it, so a comma never wraps alone. */
 function phrases(sentence: Sentence): Phrase[] {
@@ -129,6 +133,10 @@ export function Reader({
       );
   }
   const settings = p.settings;
+  // The translate button flips one sentence against the reader's setting:
+  // it reveals the English when it is hidden, and hides it when it is shown.
+  const shown = (i: number) =>
+    settings.translation !== translationLines.includes(i);
   const set = (change: Partial<Progress["settings"]>) =>
     onProgress((prev) => ({
       ...prev,
@@ -256,6 +264,7 @@ export function Reader({
                       "translation",
                       "echo",
                       "traditional",
+                      "gloss",
                       "spacious",
                     ] as const
                   ).map((key) => (
@@ -267,6 +276,7 @@ export function Reader({
                           translation: "English",
                           echo: "Word echo",
                           traditional: "Traditional",
+                          gloss: "Word meanings",
                           spacious: "More spacing",
                         }[key]
                       }
@@ -349,7 +359,7 @@ export function Reader({
                     style={[
                       s.wrap,
                       {
-                        gap: settings.spacious ? 9 : 2,
+                        gap: settings.spacious ? 12 : settings.gloss ? 6 : 2,
                         alignItems: "flex-end",
                       },
                     ]}
@@ -383,6 +393,22 @@ export function Reader({
                               colored={false}
                               traditional={settings.traditional}
                             />
+                            {settings.gloss && (
+                              <Text
+                                numberOfLines={2}
+                                style={{
+                                  fontSize: 10.5,
+                                  lineHeight: 13,
+                                  color: C.muted,
+                                  textAlign: "center",
+                                  maxWidth: 74,
+                                  minHeight: 26,
+                                  marginTop: 1,
+                                }}
+                              >
+                                {gloss(phrase.word)}
+                              </Text>
+                            )}
                           </Pressable>
                         )}
                         {!!phrase.tail && (
@@ -392,7 +418,7 @@ export function Reader({
                               fontSize: settings.fontSize,
                               lineHeight: settings.fontSize * 1.35,
                               color: C.ink,
-                              paddingBottom: 4,
+                              paddingBottom: settings.gloss ? 31 : 4,
                             }}
                           >
                             {phrase.tail}
@@ -401,7 +427,7 @@ export function Reader({
                       </View>
                     ))}
                   </View>
-                  {(settings.translation || translationLines.includes(i)) && (
+                  {shown(i) && (
                     <Text style={[s.body, { marginTop: 6, color: C.muted }]}>
                       {item.translation}
                     </Text>
@@ -423,9 +449,9 @@ export function Reader({
                     <IconButton
                       plain
                       size={19}
-                      color={translationLines.includes(i) ? C.primary : C.muted}
+                      color={shown(i) ? C.primary : C.muted}
                       name="language-outline"
-                      label={`Translate sentence ${i + 1}`}
+                      label={`${shown(i) ? "Hide" : "Show"} translation of sentence ${i + 1}`}
                       onPress={() =>
                         setTranslationLines((v) =>
                           v.includes(i) ? v.filter((n) => n !== i) : [...v, i],
