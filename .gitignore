@@ -46,3 +46,6 @@ playwright-report/
 test-results/
 
 .browser-cache/
+
+# voice samples made while choosing a voice
+audio-samples/

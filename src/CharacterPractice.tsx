@@ -1,7 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { PanResponder, Text, View, Platform, ViewStyle } from "react-native";
+import { PanResponder, Platform, Text, View, ViewStyle } from "react-native";
+import Svg, { Circle, Polyline } from "react-native-svg";
+import { GridPaper } from "./art";
 import { characters } from "./content";
-import { Button, C, Chip, s } from "./ui";
+import { C } from "./theme";
+import { Button, Chip, s } from "./ui";
+
 type Point = [number, number];
 const SIZE = 240;
 const webDrawingStyle: ViewStyle & { touchAction: string } = {
@@ -25,44 +29,10 @@ export function matchesStroke(drawn: Point[], expected: Point[]) {
     0.65
   );
 }
-function Lines({
-  points,
-  color,
-  width = 7,
-}: {
-  points: Point[];
-  color: string;
-  width?: number;
-}) {
-  return (
-    <>
-      {points.slice(1).map(([x, y], i) => {
-        const [px, py] = points[i];
-        const length = Math.hypot(x - px, y - py);
-        return (
-          <View
-            key={i}
-            pointerEvents="none"
-            style={{
-              position: "absolute",
-              left: (x + px) / 2 - length / 2,
-              top: (y + py) / 2 - width / 2,
-              width: length + 1,
-              height: width,
-              borderRadius: width / 2,
-              backgroundColor: color,
-              transform: [
-                {
-                  rotate: `${(Math.atan2(y - py, x - px) * 180) / Math.PI}deg`,
-                },
-              ],
-            }}
-          />
-        );
-      })}
-    </>
-  );
-}
+const path = (points: Point[]) =>
+  points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+
+/** Guided stroke-order practice on a sheet of grid paper. */
 export function CharacterPractice({
   character,
   onComplete,
@@ -74,7 +44,9 @@ export function CharacterPractice({
     medians = data?.medians || [];
   const [stroke, setStroke] = useState(0),
     [drawn, setDrawn] = useState<Point[]>([]),
-    [message, setMessage] = useState("Follow the green stroke from the dot."),
+    [message, setMessage] = useState(
+      "Follow the pale stroke from the red dot.",
+    ),
     [demo, setDemo] = useState(false),
     [completed, setCompleted] = useState(false);
   const strokeRef = useRef(0),
@@ -92,6 +64,7 @@ export function CharacterPractice({
     setCompleted(false);
     setDrawn([]);
     setDemo(false);
+    setMessage("Follow the pale stroke from the red dot.");
   }, [character]);
   useEffect(() => {
     demoRef.current = demo;
@@ -145,7 +118,8 @@ export function CharacterPractice({
         No stroke guide is bundled for this character.
       </Text>
     );
-  const at = completed ? medians.length : stroke;
+  const at = completed ? medians.length : stroke,
+    start = at < medians.length ? strokePoints(medians[at])[0] : null;
   return (
     <View style={{ gap: 12 }}>
       <View style={s.row}>
@@ -163,77 +137,68 @@ export function CharacterPractice({
           }}
         />
       </View>
-      <View
-        accessibilityLabel={`Trace ${character}, stroke ${Math.min(at + 1, medians.length)} of ${medians.length}`}
-        {...responder.panHandlers}
-        style={[
-          {
-            width: SIZE,
-            height: SIZE,
-            alignSelf: "center",
-            backgroundColor: "#fff",
-            borderRadius: 18,
-            borderWidth: 1,
-            borderColor: C.line,
-            overflow: "hidden",
-          },
-          Platform.OS === "web" && webDrawingStyle,
-        ]}
-      >
+      <GridPaper size={SIZE} style={{ alignSelf: "center" }}>
         <View
-          pointerEvents="none"
-          style={{
-            position: "absolute",
-            left: SIZE / 2,
-            top: 0,
-            width: 1,
-            height: SIZE,
-            backgroundColor: C.line,
-          }}
-        />
-        <View
-          pointerEvents="none"
-          style={{
-            position: "absolute",
-            left: 0,
-            top: SIZE / 2,
-            height: 1,
-            width: SIZE,
-            backgroundColor: C.line,
-          }}
-        />
-        {medians.map((m, i) => (
-          <Lines
-            key={i}
-            points={strokePoints(m)}
-            color={i < at ? C.green : i === at ? "#A8C987" : "#E6EADD"}
-          />
-        ))}
-        {at < medians.length && (
-          <View
-            pointerEvents="none"
-            style={{
+          accessibilityLabel={`Trace ${character}, stroke ${Math.min(at + 1, medians.length)} of ${medians.length}`}
+          {...responder.panHandlers}
+          style={[
+            {
               position: "absolute",
-              left: strokePoints(medians[at])[0][0] - 7,
-              top: strokePoints(medians[at])[0][1] - 7,
-              width: 14,
-              height: 14,
-              borderRadius: 7,
-              backgroundColor: "#D48B4E",
-              borderWidth: 2,
-              borderColor: "#fff",
-            }}
-          />
-        )}
-        <Lines points={drawn} color="#D48B4E" width={5} />
-      </View>
-      <Text accessibilityLiveRegion="polite" style={s.caption}>
+              left: 0,
+              top: 0,
+              width: SIZE,
+              height: SIZE,
+            },
+            Platform.OS === "web" && webDrawingStyle,
+          ]}
+        >
+          <Svg width={SIZE} height={SIZE} pointerEvents="none">
+            {medians.map((m, i) => (
+              <Polyline
+                key={i}
+                points={path(strokePoints(m))}
+                stroke={i < at ? C.ink : i === at ? "#B9C9B0" : C.hair}
+                strokeWidth={i < at ? 13 : 11}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            ))}
+            {start && (
+              <Circle
+                cx={start[0]}
+                cy={start[1]}
+                r={7}
+                fill={C.primary}
+                stroke={C.card}
+                strokeWidth={2}
+              />
+            )}
+            {drawn.length > 1 && (
+              <Polyline
+                points={path(drawn)}
+                stroke={C.primary}
+                strokeWidth={6}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                opacity={0.85}
+              />
+            )}
+          </Svg>
+        </View>
+      </GridPaper>
+      <Text
+        accessibilityLiveRegion="polite"
+        style={[s.caption, { textAlign: "center" }]}
+      >
         {demo
           ? "Watch the order, then trace with your finger or mouse."
           : message}
       </Text>
       <Button
         light
+        icon="refresh-outline"
         label="Start again"
         onPress={() => {
           setDemo(false);
@@ -241,7 +206,7 @@ export function CharacterPractice({
           strokeRef.current = 0;
           setCompleted(false);
           setDrawn([]);
-          setMessage("Follow the green stroke from the dot.");
+          setMessage("Follow the pale stroke from the red dot.");
         }}
       />
       <Text style={s.caption}>

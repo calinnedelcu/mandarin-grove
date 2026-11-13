@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { AppState, Platform } from "react-native";
 import * as Speech from "expo-speech";
+import { canPlayFiles, clipFor, playClip, stopClip } from "./sound";
 export type AudioLine = { text: string; lessonId?: string; line?: number };
-export function useSpeech(rate: number) {
+/**
+ * Speaks Chinese. A line with a bundled studio recording plays that file;
+ * anything else, or everything when `studio` is off, uses the device's own
+ * Mandarin voice.
+ */
+export function useSpeech(rate: number, studio = true) {
   const [playing, setPlaying] = useState(false);
   const [cursor, setCursor] = useState(0);
   const [queue, setQueue] = useState<AudioLine[]>([]);
@@ -11,12 +17,15 @@ export function useSpeech(rate: number) {
     queueRef = useRef<AudioLine[]>([]),
     cursorRef = useRef(0),
     rateRef = useRef(rate),
+    studioRef = useRef(studio),
     playingRef = useRef(false);
+  studioRef.current = studio;
   const voiceRef = useRef<string | undefined>(undefined);
   function stop() {
     generation.current++;
     playingRef.current = false;
     setPlaying(false);
+    stopClip();
     void Speech.stop().catch(() => {});
   }
   async function run(items: AudioLine[], index = 0) {
@@ -28,9 +37,18 @@ export function useSpeech(rate: number) {
     setQueue(items);
     cursorRef.current = index;
     setCursor(index);
-    try {
-      await Speech.stop();
+    const fail = () => {
       if (gen !== generation.current) return;
+      playingRef.current = false;
+      setPlaying(false);
+      setError(
+        "Audio unavailable. Install a Mandarin voice in your device speech settings.",
+      );
+    };
+    // Looked up only when a line has no recording, so stories with studio
+    // audio play even on a device without a Mandarin voice.
+    async function deviceVoice() {
+      if (voiceRef.current) return voiceRef.current;
       if (
         Platform.OS === "web" &&
         (typeof window === "undefined" ||
@@ -48,7 +66,6 @@ export function useSpeech(rate: number) {
           );
         }),
       ]).finally(() => clearTimeout(voiceTimer));
-      if (gen !== generation.current) return;
       const mandarin = voices.filter(
         (v) =>
           /^(?:zh(?:$|[-_](?:CN|TW|SG)(?:$|[-_]))|cmn(?:$|[-_]))/i.test(
@@ -60,42 +77,51 @@ export function useSpeech(rate: number) {
         mandarin.find((v) => /^zh[-_]CN/i.test(v.language))?.identifier ||
         mandarin[0]?.identifier;
       if (!voiceRef.current) throw Error("Install a local Mandarin voice");
-      function next(at: number) {
+      return voiceRef.current;
+    }
+    async function speakWithDevice(at: number) {
+      try {
+        const voice = await deviceVoice();
         if (gen !== generation.current) return;
-        if (at >= items.length) {
-          playingRef.current = false;
-          setPlaying(false);
-          return;
-        }
-        cursorRef.current = at;
-        setCursor(at);
         Speech.speak(items[at].text, {
           language: "zh-CN",
-          voice: voiceRef.current,
+          voice,
           rate: rateRef.current,
           onDone: () => next(at + 1),
-          onError: () => {
-            if (gen === generation.current) {
-              playingRef.current = false;
-              setPlaying(false);
-              setError(
-                "Audio unavailable. Install a Mandarin voice in your device speech settings.",
-              );
-            }
-          },
+          onError: fail,
           onStopped: () => {},
         });
-      }
-      next(index);
-    } catch {
-      if (gen === generation.current) {
-        playingRef.current = false;
-        setPlaying(false);
-        setError(
-          "Audio unavailable. Install a Mandarin voice in your device speech settings.",
-        );
+      } catch {
+        fail();
       }
     }
+    function next(at: number) {
+      if (gen !== generation.current) return;
+      if (at >= items.length) {
+        playingRef.current = false;
+        setPlaying(false);
+        return;
+      }
+      cursorRef.current = at;
+      setCursor(at);
+      const clip = studioRef.current ? clipFor(items[at].text) : undefined;
+      if (clip !== undefined && canPlayFiles())
+        playClip(
+          clip,
+          rateRef.current,
+          () => next(at + 1),
+          () => {
+            if (gen === generation.current) void speakWithDevice(at);
+          },
+        );
+      else void speakWithDevice(at);
+    }
+    try {
+      stopClip();
+      await Speech.stop();
+    } catch {}
+    if (gen !== generation.current) return;
+    next(index);
   }
   useEffect(() => {
     rateRef.current = rate;
@@ -108,6 +134,7 @@ export function useSpeech(rate: number) {
     return () => {
       sub.remove();
       generation.current++;
+      stopClip();
       void Speech.stop().catch(() => {});
     };
   }, []);

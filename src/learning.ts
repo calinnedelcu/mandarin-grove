@@ -16,6 +16,10 @@ export type Settings = {
   fontSize: number;
   spacious: boolean;
   rate: number;
+  /** Use the bundled studio recordings where one exists. */
+  studioVoice: boolean;
+  /** Short sounds for right, wrong, finished and planted. */
+  sounds: boolean;
 };
 export type Activity = {
   xp: number;
@@ -52,6 +56,8 @@ export type Progress = {
   toneCorrect: number;
   toneAttempts: number;
   writing: Record<string, number>;
+  /** The reading pinned for a calendar day, so finishing it does not swap it. */
+  daily?: { day: string; lessonId: string };
 };
 export const defaultSettings: Settings = {
   level: 1,
@@ -64,6 +70,8 @@ export const defaultSettings: Settings = {
   fontSize: 27,
   spacious: false,
   rate: 0.85,
+  studioVoice: true,
+  sounds: true,
 };
 export const emptyActivity: Activity = {
   xp: 0,
@@ -354,9 +362,15 @@ export function parseProgress(raw: string): Progress {
     !strings(settings.topics) ||
     ![22, 27, 32].includes(settings.fontSize) ||
     ![0.65, 0.85, 1, 1.15].includes(settings.rate) ||
-    !["pinyin", "translation", "echo", "traditional", "spacious"].every(
-      (k) => typeof settings[k as keyof Settings] === "boolean",
-    )
+    ![
+      "pinyin",
+      "translation",
+      "echo",
+      "traditional",
+      "spacious",
+      "studioVoice",
+      "sounds",
+    ].every((k) => typeof settings[k as keyof Settings] === "boolean")
   )
     throw Error("Invalid reading settings");
   for (const key of ["bookmarks", "grammarSaved"])
@@ -397,13 +411,21 @@ export function parseProgress(raw: string): Progress {
       ))
   )
     throw Error("Invalid quiz history");
-  return {
+  const parsed = {
     ...emptyProgress,
     ...p,
     version: 2,
     onboarded: p.onboarded === undefined ? true : p.onboarded,
     settings,
   } as Progress;
+  // A damaged daily pin is simply dropped; the app pins a fresh reading.
+  if (
+    !record(p.daily) ||
+    typeof p.daily.day !== "string" ||
+    typeof p.daily.lessonId !== "string"
+  )
+    delete parsed.daily;
+  return parsed;
 }
 export function checkTyped(input: string, expected: string, pinyin = false) {
   // Tone marks matter for pinyin: “ma” must not pass for “mǎ”.

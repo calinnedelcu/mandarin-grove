@@ -11,7 +11,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#285E45",
+        "backgroundColor": "#2C9150",
         "foregroundImage": "./assets/icon.png"
       },
       "predictiveBackGestureEnabled": false,
@@ -19,6 +19,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-font",
+      "expo-audio",
+      "expo-asset"
+    ]
   }
 }

@@ -21,90 +21,93 @@ export async function runDomSmoke() {
     vc.on("jsdomError", (e) => {
       if (e.message.includes("Uncaught")) errors.push(e.message);
     });
-    const dom = await JSDOM.fromURL("http://localhost:8081", {
-      resources: "usable",
-      runScripts: "dangerously",
-      pretendToBeVisual: true,
-      virtualConsole: vc,
-      beforeParse(w) {
-        if (snapshot) w.localStorage.setItem(KEY, snapshot);
-        w.matchMedia = () => ({
-          matches: false,
-          addListener() {},
-          removeListener() {},
-          addEventListener() {},
-          removeEventListener() {},
-          dispatchEvent() {
-            return true;
-          },
-          media: "",
-          onchange: null,
-        });
-        Object.assign(w, {
-          AnimationEvent: w.Event,
-          TransitionEvent: w.Event,
-          SpeechSynthesisUtterance: class {
-            text = "";
-            lang = "";
-            rate = 1;
-            voice = null;
-            onend = null;
-            onerror = null;
-          },
-          speechSynthesis: {
-            cancel() {
-              pending = null;
+    const dom = await JSDOM.fromURL(
+      process.env.SMOKE_URL || "http://localhost:8081",
+      {
+        resources: "usable",
+        runScripts: "dangerously",
+        pretendToBeVisual: true,
+        virtualConsole: vc,
+        beforeParse(w) {
+          if (snapshot) w.localStorage.setItem(KEY, snapshot);
+          w.matchMedia = () => ({
+            matches: false,
+            addListener() {},
+            removeListener() {},
+            addEventListener() {},
+            removeEventListener() {},
+            dispatchEvent() {
+              return true;
             },
-            speak(u: {
-              text: string;
-              rate: number;
-              lang: string;
-              onend?: (e: unknown) => void;
-            }) {
-              pending = u;
-              calls.push({ text: u.text, rate: u.rate, lang: u.lang });
+            media: "",
+            onchange: null,
+          });
+          Object.assign(w, {
+            AnimationEvent: w.Event,
+            TransitionEvent: w.Event,
+            SpeechSynthesisUtterance: class {
+              text = "";
+              lang = "";
+              rate = 1;
+              voice = null;
+              onend = null;
+              onerror = null;
             },
-            getVoices() {
-              return voice === "cantonese"
-                ? [
-                    {
-                      voiceURI: "local-zh-hk",
-                      lang: "zh-HK",
-                      name: "Local Cantonese test voice",
-                      localService: true,
-                      default: true,
-                    },
-                  ]
-                : voice
+            speechSynthesis: {
+              cancel() {
+                pending = null;
+              },
+              speak(u: {
+                text: string;
+                rate: number;
+                lang: string;
+                onend?: (e: unknown) => void;
+              }) {
+                pending = u;
+                calls.push({ text: u.text, rate: u.rate, lang: u.lang });
+              },
+              getVoices() {
+                return voice === "cantonese"
                   ? [
                       {
-                        voiceURI: "local-zh-cn",
-                        lang: "zh-CN",
-                        name: "Local Mandarin test voice",
+                        voiceURI: "local-zh-hk",
+                        lang: "zh-HK",
+                        name: "Local Cantonese test voice",
                         localService: true,
                         default: true,
                       },
                     ]
-                  : [
-                      {
-                        voiceURI: "remote-zh-cn",
-                        lang: "zh-CN",
-                        name: "Remote-only voice",
-                        localService: false,
-                        default: true,
-                      },
-                    ];
+                  : voice
+                    ? [
+                        {
+                          voiceURI: "local-zh-cn",
+                          lang: "zh-CN",
+                          name: "Local Mandarin test voice",
+                          localService: true,
+                          default: true,
+                        },
+                      ]
+                    : [
+                        {
+                          voiceURI: "remote-zh-cn",
+                          lang: "zh-CN",
+                          name: "Remote-only voice",
+                          localService: false,
+                          default: true,
+                        },
+                      ];
+              },
             },
-          },
-        });
-        w.ResizeObserver = class {
-          observe() {}
-          unobserve() {}
-          disconnect() {}
-        };
-        w.HTMLElement.prototype.scrollTo = function () {};
+          });
+          w.ResizeObserver = class {
+            observe() {}
+            unobserve() {}
+            disconnect() {}
+          };
+          w.HTMLElement.prototype.scrollTo = function () {};
+        },
       },
-    });
+    );
     Object.assign(globalThis, {
       document: dom.window.document,
       window: dom.window,
@@ -149,8 +152,8 @@ export async function runDomSmoke() {
     });
     await click("Start as a beginner");
     await click("Let's grow →");
-    await waitFor(() => getByText(body, "Your Mandarin,"));
-    await click("Stories", "tab");
+    await waitFor(() => getByText(body, "Today's three steps"));
+    await click("Path", "tab");
     await click("Tea for two · HSK 1");
     await waitFor(() => getByText(body, "A tiny reading"));
     fireEvent.click(getAllByRole(body, "button", { name: /^茶 ·/ })[0]);
@@ -182,12 +185,12 @@ export async function runDomSmoke() {
     await settle();
     assert.equal(calls.length, pausedCount);
     await click("Close lesson");
-    await click("Review", "tab");
+    await click("Practice", "tab");
     await click("Start spaced review →");
     await click("Reveal meaning");
     await click("Good · 1 day(s)");
     await click("Back to the grove");
-    await click("Stories", "tab");
+    await click("Path", "tab");
     await click("A little hello · HSK 1");
     await click("Check what stuck →");
     for (let i = 0; i < 8; i++) {
@@ -227,7 +230,7 @@ export async function runDomSmoke() {
     await click("Stop demo");
     await click("Back to word details");
     await click("Close word details");
-    await click("Stories", "tab");
+    await click("Path", "tab");
     await click("HSK 2");
     await click("A slower morning · HSK 2");
     await click("HSK 3");
@@ -255,11 +258,15 @@ export async function runDomSmoke() {
     await waitFor(() =>
       assert.ok(progress().completed.includes("breakfast-3")),
     );
-    await click("Sentence building →");
+    await click("Practice", "tab");
+    await click("Sentences drills");
+    await click("Sentence building");
     for (let i = 0; i < 4; i++) {
       await waitFor(() => getByText(body, `QUESTION ${i + 1} OF 4`));
-      const clue = getByText(body, "Put the story’s words back in order.")
-        .parentElement!.parentElement!.textContent!;
+      await waitFor(() =>
+        getByText(body, "Put the story’s words back in order."),
+      );
+      const clue = getByRole(body, "dialog").textContent!;
       const line = story.story.find((l) => clue.includes(l.translation));
       assert.ok(line);
       // Repeated words are distinct tiles; choose the first unused instance.
@@ -282,7 +289,8 @@ export async function runDomSmoke() {
       await click(i === 3 ? "See your growth →" : "Next question →");
     }
     await click("Back to the grove");
-    await click("Sentence writing →");
+    await click("Sentences drills");
+    await click("Sentence writing");
     await waitFor(() =>
       getByText(
         body,
@@ -290,6 +298,11 @@ export async function runDomSmoke() {
       ),
     );
     await click("Close quiz");
+    await click("Listening drills");
+    await click("Dictation");
+    await waitFor(() => getByText(body, "Listen, then rebuild the sentence."));
+    await click("Close quiz");
+    await click("Words drills");
     await click("Match pairs");
     await waitFor(() => getByText(body, "Find their other half."));
     for (const w of words) {
@@ -305,10 +318,12 @@ export async function runDomSmoke() {
     }
     await waitFor(() => getByText(body, "All together. Lovely work!"));
     await click("Back to the grove");
-    await click("Hear & name the tone →");
+    await click("Tones drills");
+    await click("Hear & name the tone");
     await click("Play listening question");
     await waitFor(() => assert.ok(calls.at(-1)!.text.length === 1));
     await click("Close quiz");
+    await click("Tones drills");
     await click("Pinyin recall");
     await waitFor(() => getByText(body, "Type the pinyin, with its tones."));
     await change("Type your answer", "ma");
@@ -322,21 +337,40 @@ export async function runDomSmoke() {
       "mā",
     );
     await click("Close quiz");
+    await click("Words drills");
     await click("Keyword sprint");
     await waitFor(() => getByText(body, "KEYWORD SPRINT"));
     await click("Close quiz");
+    await click("Words drills");
     await click("Zen mode");
     await waitFor(() =>
       getByText(body, "No timer. No rush. Breathe, notice, remember."),
     );
     await click("Close quiz");
-    await click("Progress", "tab");
+    await click("Brush practice");
+    await waitFor(() => getByText(body, "Stroke by stroke."));
+    await click("Close brush practice");
+    await click("Words", "tab");
+    await click("Grammar");
+    await waitFor(() => getByText(body, /patterns · one from every reading/));
+    await click("Me", "tab");
     await click("Change level, goal & interests");
     await click("HSK 3");
     await click("100 XP · Curious");
+    await click("Create a backup code");
+    await waitFor(() =>
+      assert.ok(
+        (
+          getByRole(body, "textbox", {
+            name: "Backup code",
+          }) as HTMLInputElement
+        ).value.includes('"version":2'),
+      ),
+    );
     await click("Done →");
-    await click("Today", "tab");
-    await click("Start Grove Radio");
+    await click("Practice", "tab");
+    await click("Listening drills");
+    await click("Grove Radio");
     await click("Skip story");
     await click("Pause Grove Radio");
     await click("Close Grove Radio");
@@ -348,7 +382,9 @@ export async function runDomSmoke() {
     dom.window.close();
     dom = await load(snapshot);
     body = dom.window.document.body;
-    await waitFor(() => getByText(body, "Your Mandarin,"), { timeout: 10000 });
+    await waitFor(() => getByText(body, "Today's three steps"), {
+      timeout: 10000,
+    });
     assert.deepEqual(progress().completed, ["0", "breakfast-3"]);
     assert.equal(progress().settings.fontSize, 32);
     assert.equal(progress().settings.level, 3);
@@ -371,7 +407,9 @@ export async function runDomSmoke() {
     dom.window.close();
     dom = await load(JSON.stringify(old));
     body = dom.window.document.body;
-    await waitFor(() => getByText(body, "Your Mandarin,"), { timeout: 10000 });
+    await waitFor(() => getByText(body, "Today's three steps"), {
+      timeout: 10000,
+    });
     await waitFor(() => assert.equal(progress().version, 2));
     assert.equal(progress().xp, 80);
     assert.deepEqual(progress().cards, old.cards);
@@ -380,8 +418,10 @@ export async function runDomSmoke() {
     dom.window.close();
     dom = await load(JSON.stringify(old), false);
     body = dom.window.document.body;
-    await waitFor(() => getByText(body, "Your Mandarin,"), { timeout: 10000 });
-    await click("Stories", "tab");
+    await waitFor(() => getByText(body, "Today's three steps"), {
+      timeout: 10000,
+    });
+    await click("Path", "tab");
     await click("Tea for two · HSK 1");
     await click("Play story audio");
     await waitFor(() =>
@@ -394,8 +434,10 @@ export async function runDomSmoke() {
     dom.window.close();
     dom = await load(JSON.stringify(old), "cantonese");
     body = dom.window.document.body;
-    await waitFor(() => getByText(body, "Your Mandarin,"), { timeout: 10000 });
-    await click("Stories", "tab");
+    await waitFor(() => getByText(body, "Today's three steps"), {
+      timeout: 10000,
+    });
+    await click("Path", "tab");
     await click("Tea for two · HSK 1");
     await click("Play story audio");
     await waitFor(() =>
@@ -411,7 +453,7 @@ export async function runDomSmoke() {
     );
     assert.deepEqual(errors, []);
     console.log(
-      "Passed: exported-app DOM, onboarding, dictionary, SRS, 8-question quiz, three comprehension formats, HSK versions, reader preferences, bookmarks, grammar, speech rate/queue/cancellation, character demo, sentence building/writing, matching pairs, tone studio, pinyin keyboard, sprint, Zen, radio, persisted rehydration and v1 migration. Device audio and visual layout are not simulated.",
+      "Passed: exported-app DOM, onboarding, path, dictionary, SRS, 8-question quiz, three comprehension formats, HSK versions, reader preferences, bookmarks, grammar library, speech rate/queue/cancellation, character demo, sentence building/writing, dictation, matching pairs, tone studio, pinyin keyboard, sprint, Zen, brush practice, backup code, radio, persisted rehydration and v1 migration. Device audio and visual layout are not simulated.",
     );
   } finally {
     dom.window.close();

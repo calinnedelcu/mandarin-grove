@@ -1,65 +1,87 @@
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  Pressable,
+  StyleProp,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Word, tone, toneColors } from "./content";
-export const C = {
-  bg: "#F7F8F2",
-  paper: "#FFFFFF",
-  ink: "#203B30",
-  muted: "#627268",
-  green: "#285E45",
-  lime: "#DBF2A4",
-  line: "#E3E8DC",
-  peach: "#F9E3CE",
-  red: "#B04C44",
-};
+import { C, F, s } from "./theme";
+import { LeafRule } from "./art";
+
+export { C, F, s } from "./theme";
+export type IconName = React.ComponentProps<typeof Ionicons>["name"];
+
 export function Icon({
   name,
   size = 22,
   color = C.ink,
 }: {
-  name: React.ComponentProps<typeof Ionicons>["name"];
+  name: IconName;
   size?: number;
   color?: string;
 }) {
   return <Ionicons name={name} size={size} color={color} />;
 }
+
 export function Button({
   label,
   onPress,
   light = false,
+  accent = false,
   disabled = false,
+  icon,
+  style,
 }: {
   label: string;
   onPress: () => void;
   light?: boolean;
+  /** Kept for call sites that mark the main action; primary is the default. */
+  accent?: boolean;
   disabled?: boolean;
+  icon?: IconName;
+  style?: StyleProp<ViewStyle>;
 }) {
+  const color = light && !accent ? C.ink : "#FFFFFF";
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled }}
       aria-disabled={disabled}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
         s.button,
-        light && s.lightButton,
-        { opacity: disabled ? 0.4 : pressed ? 0.75 : 1 },
+        light && !accent && s.lightButton,
+        {
+          opacity: disabled ? 0.45 : 1,
+          // The button sinks onto its darker edge when pressed.
+          borderBottomWidth: pressed ? 2 : 4,
+          marginTop: pressed ? 14 : 12,
+        },
+        style,
       ]}
     >
-      <Text style={[s.buttonText, light && { color: C.green }]}>{label}</Text>
+      {icon && <Icon name={icon} size={19} color={color} />}
+      <Text style={[s.buttonText, { color }]}>{label}</Text>
     </Pressable>
   );
 }
+
 export function Chip({
   label,
   selected = false,
   onPress,
+  kai = false,
 }: {
   label: string;
   selected?: boolean;
   onPress: () => void;
+  kai?: boolean;
 }) {
   return (
     <Pressable
@@ -73,45 +95,130 @@ export function Chip({
         { opacity: pressed ? 0.7 : 1 },
       ]}
     >
-      <Text style={[s.chipText, selected && { color: "#fff" }]}>{label}</Text>
+      <Text
+        style={[
+          s.chipText,
+          kai && { fontFamily: F.kai, fontSize: 19, lineHeight: 24 },
+          selected && { color: "#FFFFFF" },
+        ]}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
+
 export function IconButton({
   name,
   label,
   onPress,
-  color = C.green,
+  color = C.ink,
+  plain = false,
+  size = 21,
 }: {
-  name: React.ComponentProps<typeof Ionicons>["name"];
+  name: IconName;
   label: string;
   onPress: () => void;
   color?: string;
+  plain?: boolean;
+  size?: number;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      style={s.iconButton}
+      style={({ pressed }) => [
+        s.iconButton,
+        plain && { backgroundColor: "transparent", borderWidth: 0 },
+        { opacity: pressed ? 0.6 : 1 },
+      ]}
     >
-      <Icon name={name} color={color} />
+      <Icon name={name} color={color} size={size} />
     </Pressable>
   );
 }
-export function Pinyin({
-  word,
-  large = false,
+
+/** Chinese text in the Kai brush face. */
+export function Zh({
+  children,
+  size = 20,
+  color = C.ink,
+  bold = false,
+  style,
+  lines,
 }: {
-  word: Word;
-  large?: boolean;
+  children: React.ReactNode;
+  size?: number;
+  color?: string;
+  bold?: boolean;
+  style?: StyleProp<TextStyle>;
+  lines?: number;
 }) {
   return (
     <Text
+      numberOfLines={lines}
+      style={[
+        {
+          fontFamily: bold ? F.kaiBold : F.kai,
+          fontSize: size,
+          lineHeight: size * 1.38,
+          color,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </Text>
+  );
+}
+
+const HAN = /([㐀-鿿豈-﫿]+[，。！？、：；“”]*)/;
+/** English prose with its Chinese examples set in the Kai face. */
+export function Mixed({
+  children,
+  style,
+  zhSize = 17,
+}: {
+  children: string;
+  style?: StyleProp<TextStyle>;
+  zhSize?: number;
+}) {
+  return (
+    <Text style={[s.body, style]}>
+      {children.split(HAN).map((part, i) =>
+        i % 2 ? (
+          <Text
+            key={i}
+            style={{ fontFamily: F.kai, fontSize: zhSize, color: C.ink }}
+          >
+            {part}
+          </Text>
+        ) : (
+          part
+        ),
+      )}
+    </Text>
+  );
+}
+
+export function Pinyin({
+  word,
+  large = false,
+  size,
+}: {
+  word: Word;
+  large?: boolean;
+  size?: number;
+}) {
+  const fontSize = size || (large ? 20 : 12.5);
+  return (
+    <Text
       style={{
-        fontSize: large ? 21 : 13,
-        lineHeight: large ? 29 : 20,
-        fontWeight: "600",
+        fontSize,
+        lineHeight: fontSize * 1.45,
+        fontWeight: "500",
+        letterSpacing: 0.2,
       }}
     >
       {word.pinyin.split(" ").map((sy, i) => (
@@ -123,32 +230,35 @@ export function Pinyin({
     </Text>
   );
 }
+
 export function Hanzi({
   word,
   size = 28,
   traditional = false,
   colored = true,
+  color = C.ink,
 }: {
   word: Word;
   size?: number;
   traditional?: boolean;
   colored?: boolean;
+  color?: string;
 }) {
   const syllables = word.pinyin.split(" ");
   return (
     <Text
       style={{
+        fontFamily: F.kai,
         fontSize: size,
-        fontWeight: "500",
         lineHeight: size * 1.35,
-        color: C.ink,
+        color,
       }}
     >
       {Array.from(traditional ? word.traditional : word.hanzi).map((ch, i) => (
         <Text
           key={i}
           style={{
-            color: colored ? toneColors[tone(syllables[i] || "")] : C.ink,
+            color: colored ? toneColors[tone(syllables[i] || "")] : color,
           }}
         >
           {ch}
@@ -157,378 +267,259 @@ export function Hanzi({
     </Text>
   );
 }
+
 export function Section({
   title,
   caption,
+  zh,
 }: {
+  title: string;
+  caption?: string;
+  zh?: string;
+}) {
+  return (
+    <View style={[s.row, { marginTop: 28, marginBottom: 12 }]}>
+      <View style={[s.line, { flex: 1, gap: 9 }]}>
+        {zh ? (
+          <View
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 10,
+              backgroundColor: C.primaryWash,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Zh size={17} bold color={C.primaryDeep} style={{ lineHeight: 22 }}>
+              {zh}
+            </Zh>
+          </View>
+        ) : null}
+        <Text style={[s.sectionTitle, { flexShrink: 1 }]}>{title}</Text>
+      </View>
+      {caption && <Text style={s.eyebrow}>{caption}</Text>}
+    </View>
+  );
+}
+
+export function Meter({
+  value,
+  color = C.primary,
+  track,
+  slim = false,
+}: {
+  value: number;
+  color?: string;
+  track?: string;
+  slim?: boolean;
+}) {
+  return (
+    <View
+      style={[
+        s.track,
+        track ? { backgroundColor: track } : null,
+        slim && { marginVertical: 6, height: 4 },
+      ]}
+    >
+      <View
+        style={[
+          s.fill,
+          {
+            width: `${Math.max(0, Math.min(100, value))}%`,
+            backgroundColor: color,
+          },
+          slim && { height: 4 },
+        ]}
+      />
+    </View>
+  );
+}
+
+/** The page heading: a word worth knowing, its pinyin, then the English. */
+export function PageTitle({
+  zh,
+  pinyin,
+  title,
+  caption,
+}: {
+  zh: string;
+  pinyin: string;
   title: string;
   caption?: string;
 }) {
   return (
-    <View style={[s.row, { marginTop: 26, marginBottom: 12 }]}>
-      <Text style={s.sectionTitle}>{title}</Text>
-      {caption && <Text style={s.caption}>{caption}</Text>}
+    <View style={{ marginBottom: 18 }}>
+      <View style={[s.line, { alignItems: "flex-end", gap: 10 }]}>
+        <Zh size={36} bold color={C.primaryDeep} style={{ lineHeight: 44 }}>
+          {zh}
+        </Zh>
+        <Text style={[s.pinyin, { marginBottom: 7 }]}>{pinyin}</Text>
+        <LeafRule style={{ marginBottom: 8 }} />
+      </View>
+      <Text style={[s.heroTitle, { marginTop: 2 }]}>{title}</Text>
+      {caption && (
+        <Text style={[s.subtitle, { marginBottom: 0 }]}>{caption}</Text>
+      )}
     </View>
   );
 }
-export function Meter({ value }: { value: number }) {
+
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: readonly T[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
   return (
-    <View style={s.track}>
-      <View
-        style={[s.fill, { width: `${Math.max(0, Math.min(100, value))}%` }]}
-      />
+    <View
+      style={{
+        flexDirection: "row",
+        backgroundColor: C.bgDeep,
+        borderRadius: 16,
+        padding: 4,
+        marginBottom: 16,
+      }}
+    >
+      {options.map((option) => {
+        const selected = option === value;
+        return (
+          <Pressable
+            key={option}
+            accessibilityRole="button"
+            accessibilityLabel={option}
+            accessibilityState={{ selected }}
+            aria-selected={selected}
+            onPress={() => onChange(option)}
+            style={{
+              flex: 1,
+              minHeight: 40,
+              borderRadius: 12,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: selected ? C.card : "transparent",
+              borderWidth: selected ? 1 : 0,
+              borderColor: C.line,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13.5,
+                fontWeight: selected ? "700" : "500",
+                color: selected ? C.primaryDeep : C.muted,
+              }}
+            >
+              {option}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
-export function GroveArt({ small = false }: { small?: boolean }) {
+
+/** A brushed character on a wash of colour: the cover of a story or drill. */
+export function GlyphTile({
+  glyph,
+  wash = C.primaryWash,
+  ink = C.primaryDeep,
+  size = 56,
+  style,
+}: {
+  glyph: string;
+  wash?: string;
+  ink?: string;
+  size?: number;
+  style?: StyleProp<ViewStyle>;
+}) {
   return (
     <View
       accessible={false}
-      style={{
-        width: small ? 100 : 135,
-        height: small ? 100 : 150,
-        alignItems: "center",
-        justifyContent: "flex-end",
-      }}
+      style={[
+        {
+          width: size,
+          height: size,
+          borderRadius: size * 0.3,
+          backgroundColor: wash,
+          alignItems: "center",
+          justifyContent: "center",
+        },
+        style,
+      ]}
     >
-      <View
+      <Text
         style={{
-          position: "absolute",
-          width: small ? 78 : 120,
-          height: small ? 78 : 120,
-          borderRadius: 70,
-          backgroundColor: "#42765A",
-          top: 0,
+          fontFamily: F.kaiBold,
+          fontSize: size * 0.56,
+          lineHeight: size * 0.7,
+          color: ink,
         }}
-      />
-      <View
-        style={{
-          height: small ? 65 : 100,
-          width: 5,
-          backgroundColor: "#CAE59B",
-          transform: [{ rotate: "-8deg" }],
-          borderRadius: 4,
-        }}
-      />
-      {[-1, 1, -1, 1].map((dir, i) => (
-        <View
-          key={i}
-          style={{
-            position: "absolute",
-            width: small ? 30 : 42,
-            height: small ? 18 : 27,
-            backgroundColor: i === 3 ? "#F4C892" : "#DBF2A4",
-            borderTopLeftRadius: 40,
-            borderBottomRightRadius: 40,
-            borderTopRightRadius: 5,
-            borderBottomLeftRadius: 5,
-            bottom: (small ? 22 : 30) + i * (small ? 14 : 21),
-            left: (small ? 45 : 64) + dir * (small ? 14 : 20),
-            transform: [{ rotate: `${dir * 30}deg` }],
-          }}
-        />
-      ))}
-      <View
-        style={{
-          width: small ? 42 : 58,
-          height: small ? 26 : 35,
-          backgroundColor: "#EAB68A",
-          borderBottomLeftRadius: 16,
-          borderBottomRightRadius: 16,
-          borderTopLeftRadius: 5,
-          borderTopRightRadius: 5,
-        }}
-      />
+      >
+        {glyph}
+      </Text>
     </View>
   );
 }
-export const s = StyleSheet.create({
-  root: { flex: 1, backgroundColor: C.bg },
-  shell: { flex: 1, width: "100%", maxWidth: 720, alignSelf: "center" },
-  content: { padding: 22, paddingBottom: 32 },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  wrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  center: { alignItems: "center", justifyContent: "center", gap: 12 },
-  header: {
-    paddingHorizontal: 22,
-    paddingVertical: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderBottomWidth: 1,
-    borderColor: C.line,
-  },
-  brand: { fontSize: 19, color: C.ink, fontWeight: "700", letterSpacing: -0.8 },
-  logo: {
-    width: 34,
-    height: 34,
-    borderRadius: 12,
-    backgroundColor: "#E6EDDE",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  eyebrow: {
-    fontSize: 10,
-    fontWeight: "800",
-    color: C.muted,
-    letterSpacing: 1.5,
-    lineHeight: 18,
-  },
-  heroTitle: {
-    fontSize: 36,
-    lineHeight: 42,
-    fontWeight: "700",
-    letterSpacing: -1.5,
-    color: C.ink,
-    marginTop: 8,
-  },
-  title: {
-    fontSize: 26,
-    lineHeight: 34,
-    color: C.ink,
-    fontWeight: "700",
-    letterSpacing: -0.6,
-  },
-  sectionTitle: {
-    fontSize: 19,
-    color: C.ink,
-    fontWeight: "700",
-    letterSpacing: -0.4,
-  },
-  cardTitle: { fontSize: 16, lineHeight: 23, color: C.ink, fontWeight: "700" },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 23,
-    color: C.muted,
-    marginTop: 8,
-    marginBottom: 20,
-  },
-  body: { fontSize: 15, lineHeight: 24, color: C.ink },
-  caption: { fontSize: 12, lineHeight: 19, color: C.muted },
-  card: {
-    backgroundColor: C.paper,
-    borderWidth: 1,
-    borderColor: C.line,
-    borderRadius: 22,
-    padding: 18,
-    marginBottom: 12,
-  },
-  button: {
-    backgroundColor: C.green,
-    borderRadius: 15,
-    paddingVertical: 16,
-    paddingHorizontal: 18,
-    alignItems: "center",
-    marginTop: 12,
-    minHeight: 52,
-  },
-  buttonText: { fontSize: 15, fontWeight: "700", color: "#fff" },
-  lightButton: { backgroundColor: "#E9EEDF" },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 13,
-    backgroundColor: "#ECF0E5",
-    minHeight: 40,
-  },
-  chipSelected: { backgroundColor: C.green },
-  chipText: { color: C.ink, fontSize: 12, fontWeight: "600" },
-  iconButton: {
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 15,
-    backgroundColor: "#EDF1E6",
-  },
-  track: {
-    height: 7,
-    borderRadius: 8,
-    backgroundColor: "#E5EBDD",
-    overflow: "hidden",
-    marginVertical: 12,
-  },
-  fill: { height: 7, borderRadius: 8, backgroundColor: C.green },
-  search: {
-    backgroundColor: C.paper,
-    borderWidth: 1,
-    borderColor: C.line,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    borderRadius: 15,
-    fontSize: 15,
-    color: C.ink,
-    marginBottom: 16,
-  },
-  storyRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    backgroundColor: C.paper,
-    borderRadius: 20,
-    padding: 15,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: C.line,
-  },
-  storyEmoji: {
-    width: 60,
-    height: 70,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  wordRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderColor: C.line,
-  },
-  nav: { backgroundColor: C.paper, borderTopWidth: 1, borderColor: C.line },
-  navInner: {
-    flexDirection: "row",
-    paddingVertical: 8,
-    justifyContent: "space-around",
-  },
-  navItem: { alignItems: "center", gap: 3, flex: 1, minHeight: 54 },
-  navIcon: {
-    width: 45,
-    height: 29,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  navText: { fontSize: 10, color: C.muted },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderColor: C.line,
-    gap: 8,
-  },
-  cover: { borderRadius: 25, padding: 24, marginBottom: 20 },
-  sentence: {
-    backgroundColor: C.paper,
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: C.line,
-  },
-  token: {
-    paddingHorizontal: 3,
-    paddingVertical: 5,
-    borderRadius: 6,
-    minHeight: 44,
-    alignItems: "center",
-  },
-  scrim: { backgroundColor: "rgba(14,38,27,.4)", justifyContent: "flex-end" },
-  sheet: {
-    backgroundColor: C.bg,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    maxHeight: "88%",
-    width: "100%",
-    maxWidth: 720,
-    alignSelf: "center",
-    padding: 22,
-    paddingBottom: 30,
-  },
-  option: {
-    padding: 17,
-    backgroundColor: C.paper,
-    borderWidth: 1,
-    borderColor: C.line,
-    borderRadius: 16,
-    marginTop: 10,
-    flexDirection: "row",
-    gap: 16,
-    alignItems: "center",
-    minHeight: 60,
-  },
-  correct: { backgroundColor: "#E4F1D9", borderColor: "#88AD6C" },
-  wrong: { backgroundColor: "#F8E2DE", borderColor: "#D5968E" },
-  feedback: {
-    padding: 17,
-    backgroundColor: "#EDF1E6",
-    borderRadius: 18,
-    marginTop: 16,
-  },
-  badge: {
-    backgroundColor: "#EDF1E6",
-    borderRadius: 11,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-  error: {
-    padding: 14,
-    backgroundColor: "#F9E3CE",
-    borderRadius: 14,
-    margin: 12,
-  },
-  statNumber: { fontSize: 24, fontWeight: "700", color: C.ink },
-  stats: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 22,
-  },
-  audioCircle: {
-    height: 100,
-    width: 100,
-    borderRadius: 50,
-    backgroundColor: "#DBEACA",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  hint: {
-    borderLeftWidth: 3,
-    borderColor: "#ABC681",
-    paddingLeft: 14,
-    marginVertical: 16,
-  },
-  grammar: {
-    backgroundColor: "#E9EEDF",
-    padding: 20,
-    borderRadius: 20,
-    marginBottom: 15,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: C.paper,
-    borderRadius: 20,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: C.line,
-  },
-  divider: { height: 1, backgroundColor: C.line, marginVertical: 18 },
-  progressDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 4,
-    backgroundColor: C.line,
-  },
-  pill: {
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: "rgba(255,255,255,.15)",
-  },
-  notice: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: "#EAF0E2",
-    marginTop: 14,
-  },
-  empty: { padding: 28, alignItems: "center", gap: 10 },
-  toneMark: { fontSize: 42, color: C.ink, fontWeight: "600" },
-});
+
+export function Stat({
+  value,
+  label,
+  color = C.ink,
+}: {
+  value: string;
+  label: string;
+  color?: string;
+}) {
+  return (
+    <View style={s.statCard}>
+      <Text style={[s.statNumber, { color }]}>{value}</Text>
+      <Text style={[s.caption, { marginTop: 2 }]}>{label}</Text>
+    </View>
+  );
+}
+
+/** A tappable row: a tile on the left, two lines of text, a chevron. */
+export function Row({
+  title,
+  caption,
+  left,
+  right,
+  onPress,
+  label,
+  style,
+}: {
+  title: string;
+  caption?: string;
+  left?: React.ReactNode;
+  right?: React.ReactNode;
+  onPress: () => void;
+  label?: string;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label || title}
+      onPress={onPress}
+      style={({ pressed }) => [
+        s.listRow,
+        { opacity: pressed ? 0.75 : 1 },
+        style,
+      ]}
+    >
+      {left}
+      <View style={{ flex: 1 }}>
+        <Text style={s.cardTitle}>{title}</Text>
+        {caption && <Text style={s.caption}>{caption}</Text>}
+      </View>
+      {right === undefined ? (
+        <Icon name="chevron-forward" size={18} color={C.faint} />
+      ) : (
+        right
+      )}
+    </Pressable>
+  );
+}

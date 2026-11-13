@@ -1,0 +1,38 @@
+{
+  "model": "eleven_v4",
+  "voice": { "id": "cgSgspJ2msm6clMCkdW9", "name": "Jessica" },
+  "settings": {
+    "stability": 0.6,
+    "similarity_boost": 0.8,
+    "style": 0,
+    "speed": 0.95,
+    "use_speaker_boost": true
+  },
+  "samples": [
+    { "id": "cgSgspJ2msm6clMCkdW9", "name": "jessica" },
+    { "id": "EXAVITQu4vr4xnSDxMaL", "name": "sarah" },
+    { "id": "bIHbv24MWmeRgasZH58o", "name": "will" }
+  ],
+  "sfx": [
+    {
+      "name": "correct",
+      "prompt": "A short, bright two-note wooden marimba chime rising in pitch, soft and friendly, clean, no reverb tail",
+      "seconds": 0.8
+    },
+    {
+      "name": "wrong",
+      "prompt": "A short, soft, low hollow bamboo knock, two gentle descending taps, kind and not harsh",
+      "seconds": 0.7
+    },
+    {
+      "name": "complete",
+      "prompt": "A cheerful short success jingle on a guzheng with a light bamboo flute flourish, warm and playful",
+      "seconds": 2.2
+    },
+    {
+      "name": "plant",
+      "prompt": "A single soft pop with a tiny rustle of leaves, cute and light",
+      "seconds": 0.6
+    }
+  ]
+}

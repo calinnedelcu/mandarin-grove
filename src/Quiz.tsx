@@ -8,20 +8,25 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { checkTyped, changeTone } from "./learning";
-import { Exercise, exerciseXP, Session } from "./exercises";
+import { GridPaper, GroveScene, Panda, Stamp, ToneContour } from "./art";
+import { Exercise, exerciseXP, Session, toneLabels } from "./exercises";
+import { changeTone, checkTyped } from "./learning";
+import { C, F, s, shadow } from "./theme";
 import { AudioController } from "./useSpeech";
 import {
   Button,
-  C,
   Chip,
   Hanzi,
   Icon,
   IconButton,
   Meter,
+  Mixed,
   Pinyin,
-  s,
+  Zh,
 } from "./ui";
+
+const han = /[㐀-鿿]/;
+
 export function Quiz({
   session,
   audio,
@@ -42,7 +47,8 @@ export function Quiz({
     [input, setInput] = useState(""),
     [built, setBuilt] = useState<number[]>([]),
     [seconds, setSeconds] = useState(60),
-    [earned, setEarned] = useState(0);
+    [earned, setEarned] = useState(0),
+    [missed, setMissed] = useState<string[]>([]);
   const lock = useRef(false),
     finished = useRef(false),
     scoreRef = useRef(0),
@@ -85,7 +91,7 @@ export function Quiz({
     if (correct) {
       scoreRef.current++;
       setScore(scoreRef.current);
-    }
+    } else setMissed((v) => [...v, q.explanation]);
     setEarned((v) => v + (correct ? exerciseXP(q.mode) : 2));
     onAnswer(correct, q);
     audio.stop();
@@ -98,7 +104,14 @@ export function Quiz({
       audio.stop();
     }
   }
-  const listening = q.mode === "listening" || q.mode === "tone-hearing";
+  const listening =
+      q.mode === "listening" ||
+      q.mode === "tone-hearing" ||
+      q.mode === "dictation",
+    building = q.mode === "build" || q.mode === "dictation",
+    right =
+      chosen !== null && checkTyped(chosen, q.answer, q.mode === "typing"),
+    ratio = answered.current ? score / answered.current : 0;
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
       <SafeAreaView style={s.root}>
@@ -110,46 +123,110 @@ export function Quiz({
                 ? "A LITTLE MORE FLUENT"
                 : `QUESTION ${index + 1} OF ${session.exercises.length}`}
             </Text>
-            <Text style={s.caption}>
-              {session.timed && !done ? `${seconds}s` : `+${earned} XP`}
-            </Text>
+            <View style={[s.badge, { minWidth: 62, alignItems: "center" }]}>
+              <Text
+                style={[
+                  s.caption,
+                  {
+                    fontWeight: "700",
+                    color: session.timed && !done ? C.coral : C.ink,
+                  },
+                ]}
+              >
+                {session.timed && !done ? `${seconds}s` : `+${earned} XP`}
+              </Text>
+            </View>
           </View>
+          {!done && (
+            <View style={{ paddingHorizontal: 20 }}>
+              <Meter
+                slim
+                color={C.primary}
+                value={
+                  session.timed
+                    ? (seconds / 60) * 100
+                    : (index / session.exercises.length) * 100
+                }
+              />
+            </View>
+          )}
           <ScrollView
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={[s.content, { flexGrow: 1 }]}
           >
             {done ? (
-              <View style={[s.center, { flex: 1, paddingVertical: 40 }]}>
-                <Text style={{ fontSize: 72 }}>🌸</Text>
-                <Text style={s.heroTitle}>Look at you grow.</Text>
-                <Text style={[s.subtitle, { textAlign: "center" }]}>
+              <View style={[s.center, { flex: 1, paddingVertical: 30 }]}>
+                <GroveScene height={300} />
+                <Panda
+                  size={170}
+                  cheer={ratio >= 0.6}
+                  mood={ratio >= 0.9 ? "wow" : ratio >= 0.6 ? "happy" : "calm"}
+                />
+                <Text style={[s.heroTitle, { textAlign: "center" }]}>
+                  Look at you grow.
+                </Text>
+                <Text
+                  style={[s.subtitle, { textAlign: "center", marginTop: 0 }]}
+                >
                   {score} of {answered.current} correct. Every little practice
                   counts.
                 </Text>
-                <View style={[s.card, { width: "100%" }]}>
+                <View style={[s.row, { width: "100%" }]}>
+                  {[
+                    [`${score}/${answered.current}`, "correct"],
+                    [`+${earned}`, "XP earned"],
+                    [`${Math.round(ratio * 100)}%`, "accuracy"],
+                  ].map(([value, label]) => (
+                    <View
+                      key={label}
+                      style={[s.statCard, { alignItems: "center" }]}
+                    >
+                      <Text style={s.statNumber}>{value}</Text>
+                      <Text style={s.caption}>{label}</Text>
+                    </View>
+                  ))}
+                </View>
+                <View style={[s.card, { width: "100%", marginBottom: 0 }]}>
                   <Text style={s.cardTitle}>
                     {session.timed
                       ? "A lovely little sprint"
                       : session.zen
                         ? "A calm moment, well spent"
-                        : "Your next step is waiting"}
+                        : missed.length
+                          ? "Worth another look"
+                          : "Your next step is waiting"}
                   </Text>
-                  <Text style={s.body}>
-                    Missed words return sooner. Successful reviews give your
-                    memory more room.
-                  </Text>
+                  {missed.length > 0 && !session.timed ? (
+                    missed.slice(0, 5).map((line, i) => (
+                      <Mixed key={i} style={{ marginTop: 6 }}>
+                        {line}
+                      </Mixed>
+                    ))
+                  ) : (
+                    <Text style={s.body}>
+                      Missed words return sooner. Successful reviews give your
+                      memory more room.
+                    </Text>
+                  )}
                 </View>
-                <Button label="Back to the grove" onPress={onClose} />
+                <View style={{ width: "100%" }}>
+                  <Button label="Back to the grove" onPress={onClose} />
+                </View>
               </View>
             ) : (
               <>
-                <Meter value={(index / session.exercises.length) * 100} />
-                <Text style={[s.eyebrow, { marginTop: 24 }]}>
+                <Text style={[s.eyebrow, { marginTop: 14 }]}>
                   {session.title.toUpperCase()}
                 </Text>
-                <Text style={[s.title, { marginTop: 10 }]}>{q.prompt}</Text>
+                {han.test(q.prompt) ? (
+                  <Zh size={26} style={{ marginTop: 8 }}>
+                    {q.prompt}
+                  </Zh>
+                ) : (
+                  <Text style={[s.title, { marginTop: 8 }]}>{q.prompt}</Text>
+                )}
                 <View
-                  style={[s.center, { paddingVertical: 30, minHeight: 150 }]}
+                  style={[s.center, { paddingVertical: 22, minHeight: 150 }]}
                 >
                   {listening ? (
                     <>
@@ -157,27 +234,63 @@ export function Quiz({
                         accessibilityRole="button"
                         accessibilityLabel="Play listening question"
                         onPress={() => audio.say(q.spoken!)}
-                        style={s.audioCircle}
+                        style={({ pressed }) => [
+                          shadow,
+                          {
+                            height: 104,
+                            width: 104,
+                            borderRadius: 52,
+                            backgroundColor: C.primary,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            opacity: pressed ? 0.8 : 1,
+                          },
+                        ]}
                       >
-                        <Icon name="volume-high" color={C.green} size={42} />
+                        <Icon name="volume-high" color="#FFFFFF" size={40} />
                       </Pressable>
                       <Text style={s.caption}>
                         Tap to hear · replay anytime
                       </Text>
                     </>
                   ) : q.word ? (
-                    <>
-                      {q.mode === "reverse" ? (
-                        <Text style={s.title}>{q.word.meaning}</Text>
-                      ) : (
-                        <Hanzi
-                          word={q.word}
-                          size={58}
-                          colored={q.mode === "meaning"}
-                        />
-                      )}{" "}
-                      {q.mode === "meaning" && <Pinyin word={q.word} large />}
-                    </>
+                    q.mode === "reverse" ? (
+                      <View
+                        style={[
+                          s.card,
+                          {
+                            width: "100%",
+                            alignItems: "center",
+                            marginBottom: 0,
+                            paddingVertical: 26,
+                          },
+                        ]}
+                      >
+                        <Text style={[s.title, { textAlign: "center" }]}>
+                          {q.word.meaning}
+                        </Text>
+                      </View>
+                    ) : (
+                      <>
+                        <GridPaper
+                          size={150}
+                          style={{
+                            width: Math.max(
+                              150,
+                              Array.from(q.word.hanzi).length * 78 + 24,
+                            ),
+                          }}
+                          diagonal={Array.from(q.word.hanzi).length === 1}
+                        >
+                          <Hanzi
+                            word={q.word}
+                            size={Array.from(q.word.hanzi).length > 3 ? 56 : 70}
+                            colored={q.mode === "meaning"}
+                          />
+                        </GridPaper>
+                        {q.mode === "meaning" && <Pinyin word={q.word} large />}
+                      </>
+                    )
                   ) : q.mode === "gap" ? (
                     <Text style={s.caption}>
                       Choose the missing word from this story.
@@ -191,7 +304,7 @@ export function Quiz({
                   )}
                 </View>
                 {listening && audio.error && (
-                  <View style={s.notice}>
+                  <View style={[s.notice, { marginTop: 0, marginBottom: 6 }]}>
                     <Text style={s.body}>{audio.error}</Text>
                     <Text style={s.caption}>
                       Close this session and try meaning practice while audio is
@@ -203,6 +316,10 @@ export function Quiz({
                   q.options.map((option, i) => {
                     const correct = chosen !== null && option === q.answer;
                     const wrong = chosen === option && !correct;
+                    const toneIndex =
+                      q.mode === "tone-hearing"
+                        ? toneLabels.indexOf(option)
+                        : -1;
                     return (
                       <Pressable
                         key={option}
@@ -210,28 +327,78 @@ export function Quiz({
                         accessibilityLabel={`Answer ${String.fromCharCode(65 + i)}: ${option}`}
                         disabled={chosen !== null}
                         onPress={() => answer(option)}
-                        style={[
+                        style={({ pressed }) => [
                           s.option,
                           correct && s.correct,
                           wrong && s.wrong,
+                          { opacity: pressed ? 0.8 : 1 },
                         ]}
                       >
-                        <Text style={s.eyebrow}>
-                          {String.fromCharCode(65 + i)}
-                        </Text>
-                        <Text style={[s.body, { flex: 1, fontSize: 17 }]}>
+                        <View
+                          style={[
+                            s.optionKey,
+                            correct && {
+                              backgroundColor: C.primary,
+                              borderColor: C.primary,
+                            },
+                            wrong && {
+                              backgroundColor: C.coral,
+                              borderColor: C.coral,
+                            },
+                          ]}
+                        >
+                          {correct || wrong ? (
+                            <Icon
+                              name={correct ? "checkmark" : "close"}
+                              size={16}
+                              color={C.card}
+                            />
+                          ) : (
+                            <Text style={[s.eyebrow, { letterSpacing: 0 }]}>
+                              {String.fromCharCode(65 + i)}
+                            </Text>
+                          )}
+                        </View>
+                        <Text
+                          style={
+                            han.test(option)
+                              ? {
+                                  flex: 1,
+                                  fontFamily: F.kai,
+                                  fontSize: 23,
+                                  lineHeight: 30,
+                                  color: C.ink,
+                                }
+                              : [
+                                  s.body,
+                                  { flex: 1, fontSize: 16.5, color: C.ink },
+                                ]
+                          }
+                        >
                           {option}
                         </Text>
-                        {correct && (
-                          <Icon name="checkmark-circle" color={C.green} />
+                        {toneIndex >= 0 && (
+                          <ToneContour tone={toneIndex} width={40} />
                         )}
                       </Pressable>
                     );
                   })
-                ) : q.mode === "build" ? (
+                ) : building ? (
                   <>
-                    <View style={[s.card, { minHeight: 80 }]}>
-                      <Text style={[s.body, { fontSize: 24 }]}>
+                    <View
+                      style={[
+                        s.card,
+                        { minHeight: 84, justifyContent: "center" },
+                      ]}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: F.kai,
+                          fontSize: 25,
+                          lineHeight: 36,
+                          color: built.length ? C.ink : C.faint,
+                        }}
+                      >
                         {built.map((i) => q.tokens![i]).join(" ") ||
                           "Your sentence goes here"}
                       </Text>
@@ -240,6 +407,7 @@ export function Quiz({
                       {q.tokens!.map((token, i) => (
                         <Chip
                           key={i}
+                          kai
                           label={token}
                           selected={built.includes(i)}
                           onPress={() => {
@@ -265,7 +433,7 @@ export function Quiz({
                   <>
                     <TextInput
                       accessibilityLabel="Type your answer"
-                      style={s.search}
+                      style={[s.search, { fontSize: 19 }]}
                       value={input}
                       onChangeText={setInput}
                       placeholder={
@@ -273,7 +441,7 @@ export function Quiz({
                           ? "e.g. nǐ hǎo"
                           : "Type the Chinese answer"
                       }
-                      placeholderTextColor={C.muted}
+                      placeholderTextColor={C.faint}
                       autoCapitalize="none"
                       autoCorrect={false}
                       editable={chosen === null}
@@ -313,18 +481,41 @@ export function Quiz({
                   </>
                 )}
                 {chosen !== null && (
-                  <View accessibilityLiveRegion="polite" style={s.feedback}>
-                    <Text style={s.cardTitle}>
-                      {checkTyped(chosen, q.answer, q.mode === "typing")
-                        ? "That’s it! Nicely done."
-                        : "A little more practice will help."}
-                    </Text>
-                    <Text style={[s.body, { marginTop: 8 }]}>
+                  <View
+                    accessibilityLiveRegion="polite"
+                    style={[
+                      s.feedback,
+                      {
+                        borderColor: right ? C.primary : C.coral,
+                        borderWidth: 2,
+                      },
+                    ]}
+                  >
+                    <View style={[s.line, { gap: 12 }]}>
+                      <Panda head size={54} mood={right ? "happy" : "oops"} />
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={[
+                            s.eyebrow,
+                            { color: right ? C.primary : C.coralDeep },
+                          ]}
+                        >
+                          {right ? "巴适 · bā shì" : "加油 · jiā yóu"}
+                        </Text>
+                        <Text style={s.cardTitle}>
+                          {right
+                            ? "That’s it! Nicely done."
+                            : "A little more practice will help."}
+                        </Text>
+                      </View>
+                    </View>
+                    <Mixed zhSize={20} style={{ marginTop: 10 }}>
                       {q.explanation}
-                    </Text>
+                    </Mixed>
                     {q.spoken && (
                       <Button
                         light
+                        icon="volume-medium-outline"
                         label="Hear the answer"
                         onPress={() => audio.say(q.spoken!)}
                       />

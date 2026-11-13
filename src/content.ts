@@ -313,12 +313,14 @@ export const topics = [
   "Community",
   "Technology",
 ];
+// Neutral, then tones 1–4: grey, hibiscus coral, bamboo-shoot amber, leaf
+// green and sky blue.
 export const toneColors = [
-  "#66716B",
-  "#B94A43",
-  "#9B6813",
-  "#287A70",
-  "#7461B7",
+  "#66786B",
+  "#D9503F",
+  "#B67C0B",
+  "#2C9150",
+  "#3B82B8",
 ];
 export function tone(s: string) {
   if (/[āēīōūǖ]/.test(s)) return 1;

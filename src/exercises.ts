@@ -1,7 +1,15 @@
 import { Lesson, Word, tone, words, characters } from "./content";
 import { makeQuestions, Mode, shuffle } from "./learning";
 export type Exercise = {
-  mode: Mode | "choice" | "gap" | "write" | "build" | "tone-hearing" | "match";
+  mode:
+    | Mode
+    | "choice"
+    | "gap"
+    | "write"
+    | "build"
+    | "dictation"
+    | "tone-hearing"
+    | "match";
   prompt: string;
   answer: string;
   options: string[];
@@ -59,6 +67,20 @@ export function sentenceExercises(
       explanation: `${line.text} · ${line.translation}`,
     }));
 }
+/** Hear a sentence from the story, then rebuild it from its words. */
+export function dictationExercises(lesson: Lesson): Exercise[] {
+  return shuffle(lesson.story)
+    .slice(0, 4)
+    .map((line) => ({
+      mode: "dictation",
+      prompt: "Listen, then rebuild the sentence.",
+      answer: line.text,
+      options: [],
+      tokens: shuffle(line.tokens.filter((t) => t.word).map((t) => t.text)),
+      spoken: line.text,
+      explanation: `${line.text} · ${line.translation}`,
+    }));
+}
 export const toneLabels = [
   "• · Neutral",
   "1 · High",
@@ -102,7 +124,7 @@ export function exerciseXP(mode: Exercise["mode"]) {
         ? 13
         : mode === "listening" || mode === "tone-hearing" || mode === "build"
           ? 15
-          : mode === "write"
+          : mode === "write" || mode === "dictation"
             ? 16
             : 10;
 }
