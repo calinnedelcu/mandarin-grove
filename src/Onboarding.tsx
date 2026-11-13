@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GroveScene, Panda } from "./art";
+import { GroveScene } from "./art";
+import { Panda } from "./Panda";
 import { Level, topics } from "./content";
 import { defaultSettings, placementLevel, Settings, toggle } from "./learning";
 import { C, s } from "./theme";
@@ -140,7 +141,7 @@ export function Onboarding({
         <ScrollView contentContainerStyle={[s.content, { flexGrow: 1 }]}>
           <View style={[s.row, { marginBottom: 6 }]}>
             <View style={[s.line, { gap: 10 }]}>
-              <Panda head size={38} />
+              <Panda head still size={38} />
               <Text style={s.brand}>Mandarin Grove</Text>
             </View>
             <Text style={s.caption}>

@@ -1,11 +1,13 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { AppCtx } from "../app";
-import { GridPaper, GroveScene, Panda } from "../art";
+import { GridPaper, GroveScene } from "../art";
+import { Panda } from "../Panda";
 import {
   chineseDate,
   glyphFor,
   greeting,
+  pandaLines,
   PlanStep,
   proverbOfDay,
   wordOfDay,
@@ -41,6 +43,15 @@ export function Today({ app }: { app: AppCtx }) {
     next = plan.find((step) => !step.done && !step.idle),
     finished = plan.filter((step) => step.done).length,
     fed = app.dailyXP >= goal;
+  // Tapping the panda makes it hop and say something short.
+  const [taps, setTaps] = useState(0),
+    [line, setLine] = useState(-1);
+  useEffect(() => {
+    if (line < 0) return;
+    const timer = setTimeout(() => setLine(-1), 3200);
+    return () => clearTimeout(timer);
+  }, [line, taps]);
+  const said = pandaLines[line];
 
   function run(step: PlanStep) {
     if (step.key === "review")
@@ -107,12 +118,46 @@ export function Today({ app }: { app: AppCtx }) {
           </View>
           <Meter slim value={(app.dailyXP / goal) * 100} />
         </Pressable>
-        <Panda
-          size={168}
-          bamboo
-          mood={fed ? "happy" : "calm"}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Say hello to the panda"
+          onPress={() => {
+            const next =
+              (line + 1 + Math.floor(Math.random() * 3)) % pandaLines.length;
+            setLine(next);
+            setTaps((v) => v + 1);
+            audio.say(pandaLines[next].zh);
+          }}
           style={{ position: "absolute", right: 4, bottom: 6 }}
-        />
+        >
+          <Panda size={168} bamboo pulse={taps} mood={fed ? "happy" : "calm"} />
+        </Pressable>
+        {said && (
+          <View
+            accessibilityLiveRegion="polite"
+            style={[
+              shadow,
+              {
+                position: "absolute",
+                right: 14,
+                top: 8,
+                maxWidth: 200,
+                backgroundColor: C.card,
+                borderRadius: 18,
+                borderBottomRightRadius: 4,
+                paddingHorizontal: 14,
+                paddingVertical: 9,
+              },
+            ]}
+          >
+            <Zh size={21} bold color={C.forest}>
+              {said.zh}
+            </Zh>
+            <Text style={[s.caption, { fontSize: 11.5 }]}>
+              {said.pinyin} · {said.meaning}
+            </Text>
+          </View>
+        )}
       </View>
 
       <View style={[s.card, shadow, { padding: 0, marginTop: -14 }]}>

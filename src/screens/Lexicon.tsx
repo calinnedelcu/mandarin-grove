@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { AppCtx } from "../app";
-import { Panda } from "../art";
+import { Panda } from "../Panda";
 import { lessons, Word, words } from "../content";
 import { searchWord, strength } from "../learning";
 import { C } from "../theme";

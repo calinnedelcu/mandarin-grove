@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GridPaper, GroveScene, Panda, ToneContour } from "./art";
+import { GridPaper, GroveScene, ToneContour } from "./art";
+import { Panda } from "./Panda";
 import { lessons, tone, words } from "./content";
 import { Progress, schedule, strength } from "./learning";
 import { C, shadow } from "./theme";

@@ -8,7 +8,8 @@ import {
   View,
 } from "react-native";
 import { AppCtx } from "../app";
-import { GroveScene, Panda, ToneContour } from "../art";
+import { GroveScene, ToneContour } from "../art";
+import { Panda } from "../Panda";
 import { toneColors, Word, words } from "../content";
 import {
   dictationExercises,

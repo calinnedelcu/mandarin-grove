@@ -384,3 +384,23 @@ export function achievements(p: Progress, now = new Date()): Achievement[] {
     },
   ];
 }
+
+/** Short lines the panda says when it is tapped. */
+export const pandaLines: Proverb[] = [
+  { zh: "你好！", pinyin: "nǐ hǎo", meaning: "Hello!" },
+  { zh: "加油！", pinyin: "jiā yóu", meaning: "Keep going!" },
+  { zh: "真棒！", pinyin: "zhēn bàng", meaning: "Great job!" },
+  { zh: "慢慢来。", pinyin: "màn màn lái", meaning: "Take your time." },
+  { zh: "我饿了。", pinyin: "wǒ è le", meaning: "I'm hungry." },
+  {
+    zh: "竹子很好吃！",
+    pinyin: "zhú zi hěn hǎo chī",
+    meaning: "Bamboo is delicious!",
+  },
+  {
+    zh: "今天学什么？",
+    pinyin: "jīn tiān xué shén me",
+    meaning: "What are we learning today?",
+  },
+  { zh: "巴适！", pinyin: "bā shì", meaning: "So comfy! (Sichuan dialect)" },
+];

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { AppCtx } from "../app";
-import { Bamboo, GroveScene, Panda, Ring, Stamp } from "../art";
+import { Bamboo, GroveScene, Ring, Stamp } from "../art";
+import { Panda } from "../Panda";
 import { Level, lessons, words } from "../content";
 import { achievements, rankFor } from "../extras";
 import { dayKey } from "../learning";

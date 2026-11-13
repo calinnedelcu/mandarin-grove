@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Panda } from "./art";
+import { Panda } from "./Panda";
 import { Word } from "./content";
 import { matchingWords } from "./exercises";
 import { shuffle } from "./learning";
@@ -161,7 +161,7 @@ export function MatchPairs({
               </View>
             </View>
             <View style={[s.notice, s.line, { gap: 12 }]}>
-              {done && <Panda head size={50} mood="happy" />}
+              {done && <Panda head pop size={50} mood="happy" />}
               <Text
                 accessibilityLiveRegion="polite"
                 style={[s.body, { flex: 1 }]}

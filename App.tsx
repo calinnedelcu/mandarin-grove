@@ -47,7 +47,8 @@ import { Effect, playEffect } from "./src/sound";
 import { AppCtx, Tab } from "./src/app";
 import { C, F, fontAssets, s } from "./src/theme";
 import { Icon, Zh } from "./src/ui";
-import { GroveScene, Panda } from "./src/art";
+import { GroveScene } from "./src/art";
+import { Panda } from "./src/Panda";
 import { Onboarding } from "./src/Onboarding";
 import { Reader } from "./src/Reader";
 import { WordSheet } from "./src/WordSheet";
@@ -470,7 +471,7 @@ function AppContent() {
       <View style={s.shell}>
         <View style={s.header}>
           <View style={[s.line, { gap: 10 }]}>
-            <Panda head size={38} />
+            <Panda head still size={38} />
             <Text style={s.brand}>Mandarin Grove</Text>
           </View>
           <Pressable

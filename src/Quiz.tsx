@@ -8,7 +8,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GridPaper, GroveScene, Panda, Stamp, ToneContour } from "./art";
+import { GridPaper, GroveScene, Stamp, ToneContour } from "./art";
+import { Panda } from "./Panda";
 import { Exercise, exerciseXP, Session, toneLabels } from "./exercises";
 import { changeTone, checkTyped } from "./learning";
 import { C, F, s, shadow } from "./theme";
@@ -492,7 +493,12 @@ export function Quiz({
                     ]}
                   >
                     <View style={[s.line, { gap: 12 }]}>
-                      <Panda head size={54} mood={right ? "happy" : "oops"} />
+                      <Panda
+                        head
+                        pop
+                        size={54}
+                        mood={right ? "happy" : "oops"}
+                      />
                       <View style={{ flex: 1 }}>
                         <Text
                           style={[
