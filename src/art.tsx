@@ -1,8 +1,17 @@
-import React from "react";
-import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import React, { useEffect, useRef } from "react";
+import {
+  Animated,
+  Platform,
+  StyleProp,
+  StyleSheet,
+  Text,
+  View,
+  ViewStyle,
+} from "react-native";
 import Svg, {
   Circle,
   Defs,
+  Ellipse,
   G,
   Line,
   LinearGradient,
@@ -153,57 +162,207 @@ function Cane({
   return <>{parts}</>;
 }
 
-const farCanes = [16, 44, 66, 112, 146, 178, 216, 244, 268, 318, 348, 382];
+const farCanes = [16, 382, 178, 268, 66, 318, 112, 216, 44, 348, 146, 244];
 const midCanes = [
-  { x: 232, w: 6, lean: 0.3 },
   { x: 298, w: 8, lean: 0.4 },
   { x: 378, w: 9, lean: -0.5 },
+  { x: 232, w: 6, lean: 0.3 },
 ];
 
+export type DayPart = "dawn" | "day" | "dusk" | "night";
+/** Which light the grove is in at a given hour. */
+export function dayPart(now = new Date()): DayPart {
+  const h = now.getHours();
+  return h < 5
+    ? "night"
+    : h < 8
+      ? "dawn"
+      : h < 17
+        ? "day"
+        : h < 20
+          ? "dusk"
+          : "night";
+}
+
+const light = {
+  hillFar: "#DCEBC8",
+  hillNear: "#C4DFA9",
+  far: "#C3DFAF",
+  mid: "#94CC80",
+  near: ["#8FD47E", "#56B065", "#34904C"],
+  node: "#2B8448",
+  leaf: "#62B86C",
+  leafDeep: "#3E9A55",
+  vein: "#2B7A45",
+  mist: C.bg,
+  sun: "#FBE29A",
+  sky: "",
+  sunY: 78,
+};
+const scenes = {
+  day: light,
+  dawn: {
+    ...light,
+    hillFar: "#DFEFD6",
+    hillNear: "#CBE4BA",
+    far: "#CFE6C2",
+    sun: "#FFD9A6",
+    sky: "#FDEFD9",
+    sunY: 128,
+  },
+  dusk: {
+    ...light,
+    hillFar: "#DCE6C2",
+    hillNear: "#C3D8A4",
+    far: "#C9DBB0",
+    mid: "#8FC47C",
+    sun: "#F8AE62",
+    sky: "#FBDDBD",
+    sunY: 122,
+  },
+  night: {
+    hillFar: "#1A4E35",
+    hillNear: "#205C3E",
+    far: "#235F41",
+    mid: "#2F7A51",
+    near: ["#6CC47E", "#3F9F5C", "#2A7A45"],
+    node: "#1B5E36",
+    leaf: "#58B46C",
+    leafDeep: "#398F52",
+    vein: "#1B5E36",
+    mist: C.forest,
+    sun: "#F7DC86",
+    sky: "",
+    sunY: 78,
+  },
+};
+
+/** A paper lantern on its string, lit from inside. */
+function Lantern({ x, y, drop }: { x: number; y: number; drop: number }) {
+  return (
+    <G transform={`translate(${x} ${y})`}>
+      <Line x1={0} y1={0} x2={0} y2={drop} stroke="#8A5A2B" strokeWidth={0.9} />
+      <Circle cx={0} cy={drop + 14} r={26} fill="url(#lantern-glow)" />
+      <Rect x={-4.5} y={drop} width={9} height={3.4} rx={1.2} fill="#E0B24A" />
+      <Ellipse
+        cx={0}
+        cy={drop + 14}
+        rx={10}
+        ry={11.5}
+        fill="url(#lantern-body)"
+      />
+      <Path
+        d={`M-5 ${drop + 4.5} Q-9.5 ${drop + 14} -5 ${drop + 23.5} M5 ${drop + 4.5} Q9.5 ${drop + 14} 5 ${drop + 23.5} M0 ${drop + 3} V${drop + 25}`}
+        stroke="#B92F22"
+        strokeWidth={0.8}
+        fill="none"
+        opacity={0.7}
+      />
+      <Rect
+        x={-4.5}
+        y={drop + 24.6}
+        width={9}
+        height={3.2}
+        rx={1.2}
+        fill="#E0B24A"
+      />
+      <Path
+        d={`M0 ${drop + 28} V${drop + 35} M-2 ${drop + 35} V${drop + 42} M0 ${drop + 35} V${drop + 43} M2 ${drop + 35} V${drop + 42}`}
+        stroke="#E0B24A"
+        strokeWidth={1}
+        strokeLinecap="round"
+      />
+    </G>
+  );
+}
+
+const fireflies = [
+  [62, 96, 1],
+  [118, 142, 0.7],
+  [150, 74, 0.8],
+  [196, 118, 1],
+  [88, 178, 0.6],
+  [232, 168, 0.8],
+  [176, 196, 0.7],
+];
+/** Fireflies that slowly brighten and fade. */
+function Fireflies() {
+  const glow = useRef(new Animated.Value(0.45)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glow, {
+          toValue: 1,
+          duration: 1700,
+          useNativeDriver: Platform.OS !== "web",
+        }),
+        Animated.timing(glow, {
+          toValue: 0.45,
+          duration: 1700,
+          useNativeDriver: Platform.OS !== "web",
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[StyleSheet.absoluteFill, { opacity: glow }]}
+    >
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 400 240"
+        preserveAspectRatio="xMidYMax slice"
+      >
+        <Defs>
+          <RadialGradient id="firefly" cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor="#F4FBB0" stopOpacity="1" />
+            <Stop offset="0.35" stopColor="#D9F27A" stopOpacity="0.7" />
+            <Stop offset="1" stopColor="#D9F27A" stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        {fireflies.map(([x, y, scale], i) => (
+          <G key={i}>
+            <Circle cx={x} cy={y} r={9 * scale} fill="url(#firefly)" />
+            <Circle cx={x} cy={y} r={1.6 * scale} fill="#FBFFD6" />
+          </G>
+        ))}
+      </Svg>
+    </Animated.View>
+  );
+}
+
 /**
- * The grove: layered bamboo fading into morning mist, low hills and a soft
- * sun. The middle is kept calm so text can sit on it. Purely decorative.
+ * The grove: layered bamboo fading into mist, low hills and the sky of the
+ * hour. `time` picks the light (a lantern-lit dusk, a moonlit night with
+ * fireflies), `grown` from 0 to 1 thickens the bamboo as the learner's deck
+ * fills, and `dark` is the plain night palette used on dark cards. The left
+ * and middle stay calm so text can sit there. Purely decorative.
  */
 export function GroveScene({
   height = 200,
   dark = false,
   sun = true,
+  time = "day",
+  grown = 1,
   style,
 }: {
   height?: number;
   dark?: boolean;
   sun?: boolean;
+  time?: DayPart;
+  grown?: number;
   style?: StyleProp<ViewStyle>;
 }) {
-  const k = dark
-    ? {
-        hillFar: "#1A4E35",
-        hillNear: "#205C3E",
-        far: "#235F41",
-        mid: "#2F7A51",
-        near: ["#6CC47E", "#3F9F5C", "#2A7A45"],
-        node: "#1B5E36",
-        leaf: "#58B46C",
-        leafDeep: "#398F52",
-        vein: "#1B5E36",
-        mist: C.forest,
-        sun: "#F7DC86",
-        id: "d",
-      }
-    : {
-        hillFar: "#DCEBC8",
-        hillNear: "#C4DFA9",
-        far: "#C3DFAF",
-        mid: "#94CC80",
-        near: ["#8FD47E", "#56B065", "#34904C"],
-        node: "#2B8448",
-        leaf: "#62B86C",
-        leafDeep: "#3E9A55",
-        vein: "#2B7A45",
-        mist: C.bg,
-        sun: "#FBE29A",
-        id: "l",
-      };
+  const part: DayPart = dark ? "night" : time,
+    k = scenes[part],
+    id = part,
+    night = part === "night",
+    lit = !dark && (part === "dusk" || part === "night"),
+    thick = Math.max(0, Math.min(1, grown));
   return (
     <View
       pointerEvents="none"
@@ -220,23 +379,60 @@ export function GroveScene({
         preserveAspectRatio="xMidYMax slice"
       >
         <Defs>
-          <LinearGradient id={`mist-${k.id}`} x1="0" y1="0" x2="0" y2="1">
+          <LinearGradient id={`mist-${id}`} x1="0" y1="0" x2="0" y2="1">
             <Stop offset="0" stopColor={k.mist} stopOpacity="0" />
             <Stop offset="1" stopColor={k.mist} stopOpacity="0.92" />
           </LinearGradient>
-          <LinearGradient id={`cane-${k.id}`} x1="0" y1="0" x2="1" y2="0">
+          <LinearGradient id={`sky-${id}`} x1="0" y1="0" x2="0" y2="1">
+            <Stop
+              offset="0"
+              stopColor={k.sky || k.mist}
+              stopOpacity={k.sky ? 0.95 : 0}
+            />
+            <Stop offset="1" stopColor={k.sky || k.mist} stopOpacity="0" />
+          </LinearGradient>
+          <LinearGradient id={`cane-${id}`} x1="0" y1="0" x2="1" y2="0">
             <Stop offset="0" stopColor={k.near[0]} />
             <Stop offset="0.55" stopColor={k.near[1]} />
             <Stop offset="1" stopColor={k.near[2]} />
           </LinearGradient>
-          <RadialGradient id={`sun-${k.id}`} cx="50%" cy="50%" r="50%">
-            <Stop offset="0" stopColor={k.sun} stopOpacity={dark ? 0.9 : 1} />
+          <RadialGradient id={`sun-${id}`} cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor={k.sun} stopOpacity={night ? 0.9 : 1} />
             <Stop offset="0.45" stopColor={k.sun} stopOpacity="0.55" />
             <Stop offset="1" stopColor={k.sun} stopOpacity="0" />
           </RadialGradient>
+          <RadialGradient id="lantern-glow" cx="50%" cy="50%" r="50%">
+            <Stop offset="0" stopColor="#FFB866" stopOpacity="0.6" />
+            <Stop offset="1" stopColor="#FFB866" stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id="lantern-body" cx="45%" cy="40%" r="70%">
+            <Stop offset="0" stopColor="#FF9A62" />
+            <Stop offset="0.6" stopColor="#E5472F" />
+            <Stop offset="1" stopColor="#C2301F" />
+          </RadialGradient>
         </Defs>
-        {sun && <Circle cx="286" cy="78" r="64" fill={`url(#sun-${k.id})`} />}
-        {farCanes.map((x, i) => (
+        {!!k.sky && (
+          <Rect x="0" y="0" width="400" height="170" fill={`url(#sky-${id})`} />
+        )}
+        {sun && !(night && !dark) && (
+          <Circle cx="286" cy={k.sunY} r="64" fill={`url(#sun-${id})`} />
+        )}
+        {sun && night && !dark && (
+          <G>
+            <Circle
+              cx="286"
+              cy="62"
+              r="52"
+              fill={`url(#sun-${id})`}
+              opacity={0.55}
+            />
+            <Circle cx="286" cy="62" r="19" fill="#FBF4CF" />
+            <Circle cx="279" cy="56" r="4.2" fill="#E6DDAE" opacity={0.7} />
+            <Circle cx="292" cy="68" r="3" fill="#E6DDAE" opacity={0.6} />
+            <Circle cx="290" cy="54" r="1.8" fill="#E6DDAE" opacity={0.6} />
+          </G>
+        )}
+        {farCanes.slice(0, Math.round(5 + 7 * thick)).map((x, i) => (
           <Cane
             key={x}
             x={x}
@@ -255,12 +451,12 @@ export function GroveScene({
         />
         <Rect
           x="0"
-          y="92"
+          y={part === "dawn" ? 60 : 92}
           width="400"
-          height="92"
-          fill={`url(#mist-${k.id})`}
+          height={part === "dawn" ? 124 : 92}
+          fill={`url(#mist-${id})`}
         />
-        {midCanes.map((c) => (
+        {midCanes.slice(0, Math.round(1 + 2 * thick)).map((c) => (
           <Cane
             key={c.x}
             x={c.x}
@@ -282,7 +478,7 @@ export function GroveScene({
           top={-10}
           bottom={238}
           w={13}
-          fill={`url(#cane-${k.id})`}
+          fill={`url(#cane-${id})`}
           node={k.node}
           lean={0.7}
         />
@@ -291,7 +487,7 @@ export function GroveScene({
           top={-10}
           bottom={238}
           w={14}
-          fill={`url(#cane-${k.id})`}
+          fill={`url(#cane-${id})`}
           node={k.node}
           lean={-0.8}
         />
@@ -333,12 +529,135 @@ export function GroveScene({
           d="M58 236 q3 -14 9 -18 q-1 10 -3 18 M70 236 q5 -10 12 -12 q-4 7 -6 12 M318 236 q-2 -13 -8 -17 q1 9 2 17 M306 236 q-5 -9 -11 -11 q3 6 5 11 M150 238 q2 -9 6 -11 q0 6 -2 11 M246 238 q-2 -8 -6 -10 q0 5 2 10"
           fill={k.leafDeep}
         />
-        <Rect
-          x="0"
-          y="214"
-          width="400"
-          height="26"
-          fill={`url(#mist-${k.id})`}
+        {lit && (
+          <>
+            <Lantern x={322} y={-4} drop={30} />
+            <Lantern x={296} y={-4} drop={58} />
+          </>
+        )}
+        <Rect x="0" y="214" width="400" height="26" fill={`url(#mist-${id})`} />
+      </Svg>
+      {night && !dark && <Fireflies />}
+    </View>
+  );
+}
+
+function seeded(seed: number) {
+  let s = seed;
+  return () => (s = (s * 9301 + 49297) % 233280) / 233280;
+}
+
+/**
+ * The learner's own grove: one bamboo for each planted word (or for a few,
+ * once there are many). Strong words stand tall, growing ones are half
+ * height, and new ones are still shoots.
+ */
+export function GrovePlot({
+  strong,
+  growing,
+  fresh,
+  height = 150,
+}: {
+  strong: number;
+  growing: number;
+  fresh: number;
+  height?: number;
+}) {
+  const total = strong + growing + fresh,
+    per = Math.max(1, Math.ceil(total / 40)),
+    count = (n: number) => (n ? Math.max(1, Math.round(n / per)) : 0),
+    random = seeded(7),
+    stalks = [
+      ...Array.from({ length: count(strong) }, () => 2),
+      ...Array.from({ length: count(growing) }, () => 1),
+      ...Array.from({ length: count(fresh) }, () => 0),
+    ]
+      .map((kind) => ({ kind, x: 14 + random() * 372, jitter: random() }))
+      .sort((a, b) => a.x - b.x);
+  return (
+    <View
+      accessible={false}
+      style={{ height, borderRadius: 18, overflow: "hidden" }}
+    >
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 400 150"
+        preserveAspectRatio="xMidYMax slice"
+      >
+        <Defs>
+          <LinearGradient id="plot-sky" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#F4FAEA" />
+            <Stop offset="1" stopColor="#E2F0D2" />
+          </LinearGradient>
+          <LinearGradient id="plot-cane" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor="#8FD47E" />
+            <Stop offset="0.55" stopColor="#56B065" />
+            <Stop offset="1" stopColor="#34904C" />
+          </LinearGradient>
+        </Defs>
+        <Rect x="0" y="0" width="400" height="150" fill="url(#plot-sky)" />
+        <Path
+          d="M0 120 C70 104 130 116 200 112 C280 108 330 118 400 108 L400 150 L0 150 Z"
+          fill="#D3E8BD"
+        />
+        {!total &&
+          [128, 200, 272].map((x) => (
+            <Path
+              key={x}
+              d={`M${x - 6} 138 Q${x - 8} 127 ${x} 114 Q${x + 8} 127 ${x + 6} 138 Z`}
+              stroke="#8FBF6A"
+              strokeWidth={1.6}
+              strokeDasharray="4 4"
+              fill="none"
+            />
+          ))}
+        {stalks.map((st, i) => {
+          const ground = 138 + st.jitter * 8;
+          if (st.kind === 0)
+            return (
+              <G key={i}>
+                <Path
+                  d={`M${st.x - 5} ${ground} Q${st.x - 6.5} ${ground - 9} ${st.x} ${ground - 19 - st.jitter * 5} Q${st.x + 6.5} ${ground - 9} ${st.x + 5} ${ground} Z`}
+                  fill="#A9D86E"
+                />
+                <Path
+                  d={`M${st.x - 3.4} ${ground - 5} L${st.x} ${ground - 9} L${st.x + 3.4} ${ground - 5}`}
+                  stroke="#6FA63C"
+                  strokeWidth={1}
+                  fill="none"
+                />
+              </G>
+            );
+          const tall = st.kind === 2,
+            top = tall ? 14 + st.jitter * 22 : 66 + st.jitter * 20,
+            w = tall ? 7.5 : 5.5;
+          return (
+            <G key={i}>
+              <Cane
+                x={st.x}
+                top={top}
+                bottom={ground}
+                w={w}
+                fill="url(#plot-cane)"
+                node="#2B8448"
+                lean={st.jitter > 0.5 ? 0.3 : -0.3}
+              />
+              <Spray
+                x={st.x + w / 2}
+                y={top + 8}
+                scale={tall ? 0.42 : 0.3}
+                flip={st.jitter > 0.5}
+                fill="#62B86C"
+                deep="#3E9A55"
+                vein="#2B7A45"
+              />
+            </G>
+          );
+        })}
+        <Path
+          d="M0 142 C80 134 150 144 230 140 C300 136 350 144 400 138 L400 150 L0 150 Z"
+          fill="#C4DFA9"
         />
       </Svg>
     </View>

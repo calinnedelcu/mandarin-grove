@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { AppState, Platform } from "react-native";
 import * as Speech from "expo-speech";
 import { canPlayFiles, clipFor, playClip, stopClip } from "./sound";
-export type AudioLine = { text: string; lessonId?: string; line?: number };
+export type AudioLine = {
+  text: string;
+  /** The character speaking, when the line has its own recorded voice. */
+  voice?: string;
+  lessonId?: string;
+  line?: number;
+};
 /**
  * Speaks Chinese. A line with a bundled studio recording plays that file;
  * anything else, or everything when `studio` is off, uses the device's own
@@ -104,7 +110,9 @@ export function useSpeech(rate: number, studio = true) {
       }
       cursorRef.current = at;
       setCursor(at);
-      const clip = studioRef.current ? clipFor(items[at].text) : undefined;
+      const clip = studioRef.current
+        ? clipFor(items[at].text, items[at].voice)
+        : undefined;
       if (clip !== undefined && canPlayFiles())
         playClip(
           clip,

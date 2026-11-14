@@ -1,4 +1,5 @@
 import { Lesson, Level, lessons, Word, words } from "./content";
+import { places, readingsAt } from "./places";
 import {
   activeStreak,
   dayKey,
@@ -15,6 +16,9 @@ const glyphs: Record<string, string> = {
   "starter-3": "茶",
   "starter-4": "时",
   "starter-5": "邻",
+  arrival: "迎",
+  teahouse: "馆",
+  pandas: "熊",
   breakfast: "早",
   cat: "猫",
   rain: "雨",
@@ -242,22 +246,15 @@ export function coverage(lesson: Lesson, p: Progress) {
 }
 
 /**
- * The readings of one level in walking order: the starter chapters first,
- * then the learner's chosen interests, then everything else.
+ * The readings of one level in walking order: place by place through
+ * Chengdu, and within a place in the order its stories are listed.
  */
-export function pathUnits(level: Level, interests: string[] = []) {
-  const all = lessons.filter((l) => l.level === level),
-    starters = all.filter((l) => l.family.startsWith("starter-")),
-    rest = all.filter((l) => !l.family.startsWith("starter-"));
-  return [
-    ...starters,
-    ...rest.filter((l) => interests.includes(l.topic)),
-    ...rest.filter((l) => !interests.includes(l.topic)),
-  ];
+export function pathUnits(level: Level) {
+  return places.flatMap((place) => readingsAt(place, level));
 }
 /** The first reading on the learner's path that they have not finished. */
 export function nextOnPath(p: Progress): Lesson {
-  const level = pathUnits(p.settings.level, p.settings.topics);
+  const level = pathUnits(p.settings.level);
   return (
     level.find((l) => !p.completed.includes(l.id)) ||
     lessons.find((l) => !p.completed.includes(l.id)) ||
@@ -404,3 +401,21 @@ export const pandaLines: Proverb[] = [
   },
   { zh: "巴适！", pinyin: "bā shì", meaning: "So comfy! (Sichuan dialect)" },
 ];
+
+/** What the panda may wear, and the rank that unlocks each thing. */
+export const wardrobe = [
+  { outfit: "none", name: "Just fur", rank: 0 },
+  { outfit: "sprout", name: "Bamboo sprout", rank: 1 },
+  { outfit: "flower", name: "Hibiscus", rank: 2 },
+  { outfit: "scarf", name: "Red scarf", rank: 3 },
+  { outfit: "hat", name: "Straw hat", rank: 4 },
+  { outfit: "medal", name: "Gold medal", rank: 5 },
+] as const;
+export type OutfitName = (typeof wardrobe)[number]["outfit"];
+/** The learner's chosen outfit if it is unlocked, else the newest one earned. */
+export function outfitFor(p: Progress): OutfitName {
+  const rank = rankFor(p.xp).index,
+    chosen = wardrobe.find((w) => w.outfit === p.settings.outfit);
+  if (chosen && chosen.rank <= rank) return chosen.outfit;
+  return [...wardrobe].reverse().find((w) => w.rank <= rank)!.outfit;
+}

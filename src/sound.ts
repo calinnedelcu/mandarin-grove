@@ -26,8 +26,12 @@ export function canPlayFiles() {
   return supported;
 }
 
-export function clipFor(text: string): number | undefined {
-  return clips[text];
+/**
+ * The recording of a line. A character with a voice of their own has clips
+ * stored under "who|text"; everything else is stored under the text alone.
+ */
+export function clipFor(text: string, voice?: string): number | undefined {
+  return (voice ? clips[`${voice}|${text}`] : undefined) ?? clips[text];
 }
 
 let voice: AudioPlayer | null = null,

@@ -390,6 +390,7 @@ function AppContent() {
       playlist.flatMap((l) =>
         l.story.map((line, i) => ({
           text: line.text,
+          voice: line.speaker,
           lessonId: l.id,
           line: i,
         })),

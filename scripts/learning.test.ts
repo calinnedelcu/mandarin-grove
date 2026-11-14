@@ -22,7 +22,7 @@ const now = new Date(2026, 9, 1, 12);
 const ms = now.getTime();
 assert.ok(words.length >= 600);
 assert.equal(new Set(words.map((w) => w.id)).size, words.length);
-assert.equal(lessons.length, 42);
+assert.equal(lessons.length, 51);
 for (const l of lessons) {
   assert.ok(l.words.length >= 4 && l.words.length <= 12);
   for (const line of l.story) for (const id of line.ids) assert.ok(words[id]);
@@ -243,5 +243,5 @@ for (const mode of ["reverse", "typing"] as const) {
   else assert.ok(qs.every((q) => q.options.length === 4));
 }
 console.log(
-  "Passed: 618-word content audit, 42 readings, legacy migration, settings validation, mastery, practice pools, placement, pinyin recall and level recommendations.",
+  "Passed: 624-word content audit, 51 readings, legacy migration, settings validation, mastery, practice pools, placement, pinyin recall and level recommendations.",
 );

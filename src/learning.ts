@@ -22,6 +22,8 @@ export type Settings = {
   studioVoice: boolean;
   /** Short sounds for right, wrong, finished and planted. */
   sounds: boolean;
+  /** What the panda wears; unset means the newest thing earned. */
+  outfit?: string;
 };
 export type Activity = {
   xp: number;

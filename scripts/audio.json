@@ -1,6 +1,9 @@
 {
   "model": "eleven_v4",
-  "voice": { "id": "cgSgspJ2msm6clMCkdW9", "name": "Jessica" },
+  "voice": {
+    "id": "cgSgspJ2msm6clMCkdW9",
+    "name": "Jessica"
+  },
   "settings": {
     "stability": 0.6,
     "similarity_boost": 0.8,
@@ -9,9 +12,18 @@
     "use_speaker_boost": true
   },
   "samples": [
-    { "id": "cgSgspJ2msm6clMCkdW9", "name": "jessica" },
-    { "id": "EXAVITQu4vr4xnSDxMaL", "name": "sarah" },
-    { "id": "bIHbv24MWmeRgasZH58o", "name": "will" }
+    {
+      "id": "cgSgspJ2msm6clMCkdW9",
+      "name": "jessica"
+    },
+    {
+      "id": "EXAVITQu4vr4xnSDxMaL",
+      "name": "sarah"
+    },
+    {
+      "id": "bIHbv24MWmeRgasZH58o",
+      "name": "will"
+    }
   ],
   "sfx": [
     {
@@ -34,5 +46,11 @@
       "prompt": "A single soft pop with a tiny rustle of leaves, cute and light",
       "seconds": 0.6
     }
-  ]
+  ],
+  "speakers": {
+    "D": {
+      "id": "bIHbv24MWmeRgasZH58o",
+      "name": "Will"
+    }
+  }
 }

@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { AppCtx } from "../app";
-import { GridPaper, GroveScene } from "../art";
+import { dayPart, GridPaper, GroveScene } from "../art";
 import { Panda } from "../Panda";
 import {
   chineseDate,
   glyphFor,
   greeting,
+  outfitFor,
   pandaLines,
   PlanStep,
   proverbOfDay,
@@ -34,7 +35,7 @@ const stepCopy = {
 } as const;
 
 export function Today({ app }: { app: AppCtx }) {
-  const { p, today, plan, due, audio } = app,
+  const { p, today, plan, due, audio, deck } = app,
     date = new Date(app.now),
     hello = greeting(date),
     goal = p.settings.dailyGoal,
@@ -42,7 +43,13 @@ export function Today({ app }: { app: AppCtx }) {
     daily = wordOfDay(p, date),
     next = plan.find((step) => !step.done && !step.idle),
     finished = plan.filter((step) => step.done).length,
-    fed = app.dailyXP >= goal;
+    // The panda is fed by the day's XP: it holds bamboo once something has
+    // been earned today, is full at the goal, and hungry after a missed day.
+    full = app.dailyXP >= goal,
+    fedToday = app.dailyXP > 0,
+    hungry = !fedToday && p.xp > 0 && app.streak === 0,
+    part = dayPart(date),
+    night = part === "night";
   // Tapping the panda makes it hop and say something short.
   const [taps, setTaps] = useState(0),
     [line, setLine] = useState(-1);
@@ -80,16 +87,24 @@ export function Today({ app }: { app: AppCtx }) {
           paddingTop: 12,
           height: 262,
           overflow: "hidden",
+          backgroundColor: night ? C.forest : undefined,
+          borderBottomLeftRadius: 28,
+          borderBottomRightRadius: 28,
         }}
       >
-        <GroveScene height={262} />
-        <Zh size={14} color={C.muted}>
+        <GroveScene height={262} time={part} grown={deck.saved.length / 120} />
+        <Zh size={14} color={night ? C.onDarkMuted : C.muted}>
           {chineseDate(date)}
         </Zh>
-        <Zh size={40} bold color={C.forest} style={{ lineHeight: 50 }}>
+        <Zh
+          size={40}
+          bold
+          color={night ? C.onDark : C.forest}
+          style={{ lineHeight: 50 }}
+        >
           {hello.zh}
         </Zh>
-        <Text style={s.pinyin}>
+        <Text style={[s.pinyin, night && { color: C.onDarkMuted }]}>
           {hello.pinyin} · {hello.en}
         </Text>
         <Pressable
@@ -110,7 +125,11 @@ export function Today({ app }: { app: AppCtx }) {
         >
           <View style={s.row}>
             <Text style={[s.caption, { fontWeight: "700", color: C.ink2 }]}>
-              {fed ? "Panda is full!" : "Today's bamboo"}
+              {full
+                ? "Panda is full!"
+                : hungry
+                  ? "Panda is hungry"
+                  : "Today's bamboo"}
             </Text>
             <Text style={[s.caption, { fontWeight: "700", color: C.primary }]}>
               {Math.min(app.dailyXP, goal)}/{goal}
@@ -122,15 +141,22 @@ export function Today({ app }: { app: AppCtx }) {
           accessibilityRole="button"
           accessibilityLabel="Say hello to the panda"
           onPress={() => {
-            const next =
-              (line + 1 + Math.floor(Math.random() * 3)) % pandaLines.length;
+            const next = hungry
+              ? pandaLines.findIndex((l) => l.zh === "我饿了。")
+              : (line + 1 + Math.floor(Math.random() * 3)) % pandaLines.length;
             setLine(next);
             setTaps((v) => v + 1);
             audio.say(pandaLines[next].zh);
           }}
           style={{ position: "absolute", right: 4, bottom: 6 }}
         >
-          <Panda size={168} bamboo pulse={taps} mood={fed ? "happy" : "calm"} />
+          <Panda
+            size={168}
+            bamboo={fedToday || p.xp === 0}
+            pulse={taps}
+            mood={full ? "happy" : hungry ? "hungry" : "calm"}
+            outfit={outfitFor(p)}
+          />
         </Pressable>
         {said && (
           <View

@@ -29,7 +29,15 @@ export type Sentence = {
   translation: string;
   tokens: Token[];
   ids: number[];
+  /** In a dialogue, the key of the character who says this line. */
+  speaker?: SpeakerId;
 };
+/** The recurring characters of the Chengdu stories. */
+export const speakers = {
+  L: { zh: "乐乐", pinyin: "Lè le", en: "Lele" },
+  D: { zh: "大山", pinyin: "Dà shān", en: "Dashan" },
+} as const;
+export type SpeakerId = keyof typeof speakers;
 export type ReadingCheck = {
   prompt: string;
   options?: string[];
@@ -61,7 +69,7 @@ export function tokenize(text: string): Token[] {
     const found = lexicon.find((w) => rest.startsWith(w.hanzi));
     if (found) {
       const word =
-        found.hanzi === "只" && /^只(?:小|大)?(?:猫|狗|鸟)/.test(rest)
+        found.hanzi === "只" && /^只(?:小|大)?(?:猫|狗|鸟|熊猫)/.test(rest)
           ? {
               ...found,
               pinyin: "zhī",
@@ -243,16 +251,31 @@ export const lessons: Lesson[] = [
   }),
   ...storySeeds.flatMap((seed) =>
     seed.versions.map((version, i): Lesson => {
-      const story = version.lines.map((l) => sentence(l[0], l[1]));
+      const story = version.lines.map((l) => ({
+        ...sentence(l[0], l[1]),
+        ...(l[2] ? { speaker: l[2] as SpeakerId } : {}),
+      }));
       const encountered = [...new Set(story.flatMap((line) => line.ids))].map(
         (id) => words[id],
       );
       const keyWords = encountered
         .filter(
           (w) =>
-            !["的", "了", "是", "我", "你", "在", "和", "有", "个"].includes(
-              w.hanzi,
-            ),
+            ![
+              "的",
+              "了",
+              "是",
+              "我",
+              "你",
+              "在",
+              "和",
+              "有",
+              "个",
+              // The characters' names are not words to study.
+              "乐乐",
+              "大山",
+              "胖胖",
+            ].includes(w.hanzi),
         )
         .slice(0, 12);
       const gapWord = keyWords.find((w) => w.hanzi.length > 1) || keyWords[0];

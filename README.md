@@ -14,19 +14,21 @@ Open the QR code using an **Expo Go version compatible with SDK 57**, with your 
 
 ## The five tabs
 
-- **Today (今):** one card with the day's three steps — remember, read, practise — and a single button that starts the next one. The reading is pinned for the day, so finishing it does not swap it. Below it, a word of the day and a saying.
-- **Path (路):** the readings of each HSK level as stepping stones in walking order: starter chapters first, then your interests, then the rest. A **Library** view keeps search, topic and level filters, bookmarks and completed stories.
+- **Today (今):** one card with the day's three steps — remember, read, practise — and a single button that starts the next one. The reading is pinned for the day, so finishing it does not swap it. The scene above it follows the hour (misty dawn, day, lantern-lit dusk, a moonlit night with fireflies) and its bamboo thickens as your deck grows. The panda is fed by the day's XP: it holds bamboo once you have earned some, is full at the goal, and is hungry after a missed day. Tap it and it says something short.
+- **Path (路):** a map of Chengdu. Seven drawn places — the East Station, Kuanzhai Alley, People's Park, Jinli, the Panda Base, Chunxi Road and Sichuan University — sit along a road, and every reading belongs to one of them. Tapping a place opens a note about it and its readings at the chosen level; the order of the places is the order of the path. A **Library** view keeps search, topic and level filters, bookmarks and completed stories.
 - **Practice (练):** spaced review on top, then four drill areas that open as a short list — Words, Listening, Tones, Sentences — plus guided writing. Word drills run on a pool you choose (whole deck, due, weak, growing, strong, new). Words that have slipped appear as **Tricky words**.
 - **Words (词):** the 618-word dictionary, your own deck sorted weakest first with a strength bar, and a **Grammar** library with one pattern from every reading.
-- **Me (我):** rank, a bamboo stalk that grows a segment per streak day, a twelve-week activity grid, progress per HSK level, twelve badges, and settings with an on-device **backup code** to move progress between devices.
+- **Me (我):** rank, a bamboo stalk that grows a segment per streak day, **your grove** (one bamboo per planted word: shoots for new words, tall canes for strong ones), a **wardrobe** of five things the panda earns one rank at a time, a twelve-week activity grid, progress per HSK level, twelve badges, and settings with an on-device **backup code** to move progress between devices.
 
 In a reading, tap **any Chinese word** for its meaning, pronunciation, tone shapes and the sentence it came from; plant it in your deck, or plant all key words at once. Sentence audio, four speeds, pinyin/English/traditional toggles, font size, spacing and word-echo tints are remembered. New in this version: **dictation** (hear a sentence, rebuild it), a **brush practice** queue built from your own deck, tone contours, a pinned daily plan, tricky words, the grammar library and backups.
+
+Nine readings are **dialogues** between two recurring characters, 乐乐 (Lele, who lives in Chengdu) and 大山 (Dashan, who is visiting), with the panda 胖胖. Each line shows who is speaking, and Dashan's lines have their own recorded voice.
 
 Grove Radio plays a shuffled, finite playlist at your level with skip, pause and a sleep timer. It stops in the background. News-style pieces are clearly labeled **original practice**, not live journalism. Placement is a six-question starting suggestion; you can change levels at any time.
 
 ## Design
 
-The look is defined in three files. `src/theme.ts` holds every colour, typeface and shared style: bamboo greens, panda black and white, bamboo-shoot amber for "next", hibiscus coral for mistakes. `src/art.tsx` holds the vector drawings — the panda (five moods, with or without bamboo), the layered grove scene, the streak stalk, grid paper and tone contours. `src/ui.tsx` holds the shared components. Screens live in `src/screens/`.
+The look is defined in three files. `src/theme.ts` holds every colour, typeface and shared style: bamboo greens, panda black and white, bamboo-shoot amber for "next", hibiscus coral for mistakes. `src/art.tsx` holds the grove scene for each hour, the streak stalk, the grove plot, grid paper and tone contours; `src/Panda.tsx` the animated panda with its moods and outfits; `src/PlaceArt.tsx` the seven place drawings, with their data in `src/places.ts`. `src/ui.tsx` holds the shared components. Screens live in `src/screens/`.
 
 Chinese is set in a subset of **LXGW WenKai**, a Kai face close to handwriting; English headings use **Fredoka**. The hanzi font contains only the characters the app shows. After adding Chinese text anywhere in `App.tsx` or `src/`, run:
 

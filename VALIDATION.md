@@ -1,5 +1,11 @@
 # Validation
 
+## 14 November 2026: growing grove, Chengdu map, dialogues
+
+`npx tsc --noEmit`, `npm test`, `npx expo export --platform web` and `npm run test:dom` all **pass**. The DOM test now opens readings through the map's place sheets and checks that a dialogue shows its speakers. `npm run test:web` was not run and still describes the old layout.
+
+Seen in a real browser at 375 px: the Today scene by day, at dusk and at night (the hour was forced for the last two), the map with all seven places, a place sheet, a dialogue with speaker labels and word-by-word meanings, the grove plot when empty, and the wardrobe. **Not seen:** the dawn scene, the grove plot with planted words, the hungry panda, the outfits on the Today panda, and anything on a phone. The 76 new voice clips, including Dashan's second voice, **have not been checked by ear**, and the new Chinese text has not had a native review.
+
 ## 13 November 2026: panda redesign, new features, bundled audio
 
 | Command                          | Result                                                                                                   |

@@ -1,5 +1,6 @@
 type Version = {
-  lines: [string, string][];
+  /** Chinese, English and, in a dialogue, who is speaking. */
+  lines: ([string, string] | [string, string, string])[];
   grammar: string;
   check: [string, string, string[], string];
   reply: [string, string, string];
@@ -1151,6 +1152,385 @@ export const storySeeds: Seed[] = [
           "Type the Chinese word for neighbor.",
           "邻居",
           "邻居 · lín jū · neighbor",
+        ],
+      },
+    ],
+  },
+  {
+    id: "arrival",
+    title: "Welcome to Chengdu",
+    subtitle: "Lele meets Dashan at the station",
+    topic: "Travel",
+    emoji: "🚄",
+    color: "#DCECF6",
+    format: "Story",
+    versions: [
+      {
+        lines: [
+          ["你好！你是大山吗？", "Hello! Are you Dashan?", "L"],
+          ["是，我是大山。你是乐乐吗？", "Yes, I'm Dashan. Are you Lele?", "D"],
+          ["是。很高兴认识你！", "I am. Very nice to meet you!", "L"],
+          ["我也很高兴。成都很大！", "I'm glad too. Chengdu is big!", "D"],
+          ["你想喝茶吗？", "Would you like some tea?", "L"],
+          ["想！谢谢你。", "I would! Thank you.", "D"],
+        ],
+        grammar:
+          "A 吗 question is answered with its verb, not with yes or no: 你是大山吗？→ 是。你想喝茶吗？→ 想。",
+        check: [
+          "Which city does Dashan arrive in?",
+          "Chengdu",
+          ["Chengdu", "Beijing", "He does not say"],
+          "成都很大！Chengdu is big!",
+        ],
+        reply: [
+          "Type the Chinese name of the city.",
+          "成都",
+          "成都 · chéng dū · Chengdu",
+        ],
+      },
+      {
+        lines: [
+          [
+            "大山，你到了！欢迎来成都。",
+            "Dashan, you've arrived! Welcome to Chengdu.",
+            "L",
+          ],
+          ["谢谢你来火车站。", "Thank you for coming to the station.", "D"],
+          ["路上累不累？", "Was the journey tiring?", "L"],
+          [
+            "不累。这是我第一次来成都，我非常高兴。",
+            "Not at all. This is my first time in Chengdu, and I'm very happy.",
+            "D",
+          ],
+          [
+            "我家离这里不远，我们走吧。",
+            "My home isn't far from here. Let's walk.",
+            "L",
+          ],
+          [
+            "好！你说得很慢，我都听懂了。",
+            "Great! You speak slowly, so I understood everything.",
+            "D",
+          ],
+        ],
+        grammar:
+          "离 measures the distance between two places: 我家离这里不远。Verb + 得 + adjective says how something is done: 你说得很慢。",
+        check: [
+          "How will they get to Lele's home?",
+          "On foot",
+          ["On foot", "By taxi", "By train"],
+          "我家离这里不远，我们走吧。My home isn't far from here. Let's walk.",
+        ],
+        reply: [
+          "Type the Chinese for “not far”.",
+          "不远",
+          "不远 · bù yuǎn · not far",
+        ],
+      },
+      {
+        lines: [
+          [
+            "大山！我终于看见你了，欢迎来成都。",
+            "Dashan! I finally get to see you. Welcome to Chengdu.",
+            "L",
+          ],
+          [
+            "谢谢你来接我。路上人很多，但是我不觉得累。",
+            "Thank you for coming to meet me. It was crowded on the way, but I don't feel tired.",
+            "D",
+          ],
+          [
+            "你是第一次来这个城市吧？",
+            "This is your first time in this city, isn't it?",
+            "L",
+          ],
+          [
+            "是的，以前我只在照片上看过成都。",
+            "Yes. Before, I had only seen Chengdu in photos.",
+            "D",
+          ],
+          [
+            "那我先带你去喝茶，然后我们去公园。",
+            "Then I'll take you for tea first, and after that we'll go to the park.",
+            "L",
+          ],
+          [
+            "太好了！我一直想看看成都人怎么喝茶。",
+            "Wonderful! I've always wanted to see how people in Chengdu drink tea.",
+            "D",
+          ],
+        ],
+        grammar:
+          "先 … 然后 … puts two actions in order: 我先带你去喝茶，然后我们去公园。Verb + 过 marks an experience: 我只在照片上看过成都。",
+        check: [
+          "How had Dashan seen Chengdu before this trip?",
+          "Only in photos",
+          ["Only in photos", "On an earlier visit", "He had never seen it"],
+          "以前我只在照片上看过成都。Before, I had only seen Chengdu in photos.",
+        ],
+        reply: [
+          "Type the Chinese word for “finally”.",
+          "终于",
+          "终于 · zhōng yú · finally",
+        ],
+      },
+    ],
+  },
+  {
+    id: "teahouse",
+    title: "Tea in the park",
+    subtitle: "A slow afternoon at the teahouse",
+    topic: "Culture",
+    emoji: "🍵",
+    color: "#E4F3D6",
+    format: "Story",
+    versions: [
+      {
+        lines: [
+          ["这是茶馆。", "This is a teahouse.", "L"],
+          ["人很多！", "So many people!", "D"],
+          ["你喝什么茶？", "What tea will you have?", "L"],
+          ["我想喝热茶。", "I'd like hot tea.", "D"],
+          ["好。我也喝热茶。", "All right. I'll have hot tea too.", "L"],
+          ["这个茶很好喝！", "This tea is delicious!", "D"],
+          ["我们在这里坐坐。", "Let's sit here for a while.", "L"],
+        ],
+        grammar:
+          "什么 asks “what” and stays where the answer goes: 你喝什么茶？→ 我喝热茶。Doubling a verb, as in 坐坐, makes it light and casual.",
+        check: [
+          "What does Dashan want to drink?",
+          "Hot tea",
+          ["Hot tea", "Cold water", "Coffee"],
+          "我想喝热茶。I'd like hot tea.",
+        ],
+        reply: [
+          "Type the Chinese word for “teahouse”.",
+          "茶馆",
+          "茶馆 · chá guǎn · teahouse",
+        ],
+      },
+      {
+        lines: [
+          [
+            "成都人喜欢在公园里喝茶。",
+            "People in Chengdu like to drink tea in the park.",
+            "L",
+          ],
+          [
+            "大家都在说话，没有人看手机！",
+            "Everyone is talking, and nobody is looking at a phone!",
+            "D",
+          ],
+          [
+            "是啊。在这里，时间走得很慢。",
+            "That's right. Here, time moves slowly.",
+            "L",
+          ],
+          ["你看，服务员来了。", "Look, the waiter is coming.", "D"],
+          ["他来给我们送热水。", "He's bringing us hot water.", "L"],
+          [
+            "一杯茶可以喝一个下午吗？",
+            "Can one cup of tea last a whole afternoon?",
+            "D",
+          ],
+          [
+            "可以！所以我每个星期都来。",
+            "It can! That's why I come every week.",
+            "L",
+          ],
+        ],
+        grammar:
+          "在 + verb shows an action in progress: 大家都在说话。每 … 都 … means “every …”: 我每个星期都来。",
+        check: [
+          "How often does Lele come to the teahouse?",
+          "Every week",
+          ["Every week", "Every day", "Once a year"],
+          "我每个星期都来。I come every week.",
+        ],
+        reply: [
+          "Type the Chinese word for “waiter”.",
+          "服务员",
+          "服务员 · fú wù yuán · waiter",
+        ],
+      },
+      {
+        lines: [
+          [
+            "这家茶馆已经有一百年的历史了。",
+            "This teahouse already has a hundred years of history.",
+            "L",
+          ],
+          [
+            "所以这里的桌子和椅子都很旧。",
+            "So that's why the tables and chairs here are so old.",
+            "D",
+          ],
+          [
+            "旧是旧，但是坐着很舒服。",
+            "Old they may be, but they're comfortable to sit in.",
+            "L",
+          ],
+          [
+            "我发现客人除了喝茶，还在这里看书、说话。",
+            "I notice the guests don't only drink tea; they also read and talk here.",
+            "D",
+          ],
+          [
+            "成都人觉得，茶馆就像自己的家一样。",
+            "People in Chengdu feel a teahouse is just like their own home.",
+            "L",
+          ],
+          [
+            "我明白了。在这里，慢慢喝茶才是最重要的。",
+            "I see. Here, drinking your tea slowly is what matters most.",
+            "D",
+          ],
+        ],
+        grammar:
+          "A 是 A，但是 … concedes a point before a contrast: 旧是旧，但是坐着很舒服。除了 … 还 … adds to what was said: 除了喝茶，还在这里看书。",
+        check: [
+          "How old is the teahouse?",
+          "About a hundred years",
+          ["About a hundred years", "About ten years", "It opened this year"],
+          "这家茶馆已经有一百年的历史了。This teahouse already has a hundred years of history.",
+        ],
+        reply: [
+          "Type the Chinese word for “comfortable”.",
+          "舒服",
+          "舒服 · shū fu · comfortable",
+        ],
+      },
+    ],
+  },
+  {
+    id: "pandas",
+    title: "Breakfast with Pangpang",
+    subtitle: "An early visit to the panda base",
+    topic: "Nature",
+    emoji: "🐼",
+    color: "#D6EFCB",
+    format: "Story",
+    versions: [
+      {
+        lines: [
+          ["你看！那是胖胖。", "Look! That's Pangpang.", "L"],
+          ["胖胖很大！", "Pangpang is big!", "D"],
+          ["胖胖在吃东西。", "Pangpang is eating.", "L"],
+          ["熊猫吃什么？", "What do pandas eat?", "D"],
+          ["熊猫爱吃竹子。", "Pandas love to eat bamboo.", "L"],
+          ["胖胖吃了很多竹子！", "Pangpang has eaten a lot of bamboo!", "D"],
+          [
+            "熊猫上午吃，下午睡觉。",
+            "Pandas eat in the morning and sleep in the afternoon.",
+            "L",
+          ],
+        ],
+        grammar:
+          "在 + verb says what is happening right now: 胖胖在吃东西。爱 + verb means “love to”: 熊猫爱吃竹子。",
+        check: [
+          "What do pandas love to eat?",
+          "Bamboo",
+          ["Bamboo", "Apples", "Rice"],
+          "熊猫爱吃竹子。Pandas love to eat bamboo.",
+        ],
+        reply: [
+          "Type the Chinese word for “panda”.",
+          "熊猫",
+          "熊猫 · xióng māo · panda",
+        ],
+      },
+      {
+        lines: [
+          [
+            "我们来得很早，因为熊猫早上吃饭。",
+            "We came early because pandas eat in the morning.",
+            "L",
+          ],
+          [
+            "那只熊猫真可爱！它正在看着我们。",
+            "That panda is so cute! It's looking at us.",
+            "D",
+          ],
+          [
+            "它叫胖胖，已经三岁了。",
+            "Its name is Pangpang, and it's already three.",
+            "L",
+          ],
+          ["它一天吃多少竹子？", "How much bamboo does it eat in a day?", "D"],
+          ["很多！它比你吃得多。", "A lot! It eats more than you do.", "L"],
+          [
+            "吃完就睡觉，我也想做熊猫！",
+            "Eat, then sleep. I want to be a panda too!",
+            "D",
+          ],
+        ],
+        grammar:
+          "A 比 B + 得 + adjective compares how two things do something: 它比你吃得多。Verb + 完 + 就 … means one thing follows straight after another: 吃完就睡觉。",
+        check: [
+          "Why did they come early?",
+          "Pandas eat in the morning",
+          [
+            "Pandas eat in the morning",
+            "The park closes at noon",
+            "Tickets are cheaper",
+          ],
+          "因为熊猫早上吃饭。Because pandas eat in the morning.",
+        ],
+        reply: [
+          "Type the Chinese word for “bamboo”.",
+          "竹子",
+          "竹子 · zhú zi · bamboo",
+        ],
+      },
+      {
+        lines: [
+          [
+            "熊猫是中国特别有名的动物，很多人为了看它们来成都。",
+            "The panda is an especially famous animal in China, and many people come to Chengdu just to see them.",
+            "L",
+          ],
+          [
+            "我以前以为熊猫总是在睡觉，没想到它们吃得非常快。",
+            "I used to think pandas were always asleep. I didn't expect them to eat so fast.",
+            "D",
+          ],
+          [
+            "一只大熊猫一天要吃很多竹子，所以它们需要很长时间吃饭。",
+            "A giant panda has to eat a great deal of bamboo every day, so they need a long time for their meals.",
+            "L",
+          ],
+          [
+            "你看胖胖，它把竹子都吃完了。",
+            "Look at Pangpang: it has eaten up all the bamboo.",
+            "D",
+          ],
+          [
+            "这里的人照顾它们照顾得很认真。",
+            "The people here look after them very carefully.",
+            "L",
+          ],
+          [
+            "我决定了，下次来成都，我还要先来看胖胖。",
+            "I've decided: next time I come to Chengdu, I'll come to see Pangpang first again.",
+            "D",
+          ],
+        ],
+        grammar:
+          "把 moves the object in front of the verb to say what is done to it: 它把竹子都吃完了。没想到 … introduces a surprise: 没想到它们吃得非常快。",
+        check: [
+          "What surprised Dashan?",
+          "How fast pandas eat",
+          [
+            "How fast pandas eat",
+            "How small pandas are",
+            "How few visitors there were",
+          ],
+          "没想到它们吃得非常快。I didn't expect them to eat so fast.",
+        ],
+        reply: [
+          "Type the Chinese word for “animal”.",
+          "动物",
+          "动物 · dòng wù · animal",
         ],
       },
     ],

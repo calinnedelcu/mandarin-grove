@@ -114,10 +114,7 @@ export function Preferences({
           />
         ))}
       </View>
-      <Text style={s.caption}>
-        Your interests come first on the path. You can change all of this
-        anytime.
-      </Text>
+      <Text style={s.caption}>You can change all of this anytime.</Text>
     </>
   );
 }

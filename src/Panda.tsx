@@ -27,7 +27,9 @@ import { C } from "./theme";
 // its own: the body breathes, the head sways, bobs and shakes, and the bamboo
 // tips towards the mouth. Blinking and chewing swap shapes on the face.
 
-export type PandaMood = "calm" | "happy" | "sleepy" | "oops" | "wow";
+export type PandaMood = "calm" | "happy" | "sleepy" | "oops" | "wow" | "hungry";
+/** Things the panda can wear, earned one rank at a time. */
+export type Outfit = "none" | "sprout" | "flower" | "scarf" | "hat" | "medal";
 
 const native = Platform.OS !== "web";
 let reduceMotion = false;
@@ -54,6 +56,15 @@ function Gradients() {
         <Stop offset="0" stopColor="#4A5850" />
         <Stop offset="0.6" stopColor="#27332C" />
         <Stop offset="1" stopColor="#161F1A" />
+      </RadialGradient>
+      <LinearGradient id="panda-straw" x1="0" y1="0" x2="1" y2="1">
+        <Stop offset="0" stopColor="#F6E3A1" />
+        <Stop offset="1" stopColor="#D6AE52" />
+      </LinearGradient>
+      <RadialGradient id="panda-gold" cx="38%" cy="32%" r="75%">
+        <Stop offset="0" stopColor="#FFF0A8" />
+        <Stop offset="0.6" stopColor="#F2C23C" />
+        <Stop offset="1" stopColor="#C8901A" />
       </RadialGradient>
       <LinearGradient id="panda-cane" x1="0" y1="0" x2="1" y2="0">
         <Stop offset="0" stopColor="#9BDB86" />
@@ -96,7 +107,17 @@ function Foot({ flip = false }: { flip?: boolean }) {
   );
 }
 
-function Body({ bamboo, cheer }: { bamboo: boolean; cheer: boolean }) {
+function Body({
+  bamboo,
+  cheer,
+  mood,
+  outfit,
+}: {
+  bamboo: boolean;
+  cheer: boolean;
+  mood: PandaMood;
+  outfit: Outfit;
+}) {
   return (
     <>
       <Ellipse cx={100} cy={118} rx={58} ry={31} fill={INK} />
@@ -135,6 +156,59 @@ function Body({ bamboo, cheer }: { bamboo: boolean; cheer: boolean }) {
           <Arm cx={145} cy={133} angle={-18} />
         </>
       )}
+      {mood === "hungry" && (
+        <Path
+          d="M86 149 q4 -3.4 8 0 t8 0 t8 0 M90 158 q4 -3.4 8 0 t8 0"
+          stroke="#9AA79E"
+          strokeWidth={2}
+          strokeLinecap="round"
+          fill="none"
+        />
+      )}
+      {outfit === "scarf" && (
+        <>
+          <Path d="M80 130 L73 161 L91 164 L95 133 Z" fill="#E5472F" />
+          <Path
+            d="M74.6 153 L92 156 M76 146.5 L93 149.5"
+            stroke="#FBE29A"
+            strokeWidth={2.2}
+          />
+          <Path
+            d="M54 110 C70 127 130 127 146 110 C149 121 141 132 128 136 C110 141 90 141 72 136 C59 132 51 121 54 110 Z"
+            fill="#E5472F"
+          />
+          <Path
+            d="M60 119 C78 132 122 132 140 119"
+            stroke="#C2301F"
+            strokeWidth={1.6}
+            strokeLinecap="round"
+            fill="none"
+            opacity={0.65}
+          />
+        </>
+      )}
+      {outfit === "medal" && (
+        <>
+          <Path
+            d="M84 124 L100 153 L116 124 L108.5 124 L100 140 L91.5 124 Z"
+            fill="#D9503F"
+          />
+          <Circle cx={100} cy={156} r={11} fill="url(#panda-gold)" />
+          <Circle
+            cx={100}
+            cy={156}
+            r={7.6}
+            stroke="#C8901A"
+            strokeWidth={1}
+            fill="none"
+            opacity={0.8}
+          />
+          <Path
+            d="M100 150.4 L101.7 154.2 L105.8 154.6 L102.7 157.3 L103.6 161.3 L100 159.2 L96.4 161.3 L97.3 157.3 L94.2 154.6 L98.3 154.2 Z"
+            fill="#FFF6C9"
+          />
+        </>
+      )}
     </>
   );
 }
@@ -169,7 +243,7 @@ function Eye({
       />
     );
   const r = mood === "wow" ? 8.6 : 7,
-    down = mood === "oops" ? 2.4 : 0;
+    down = mood === "oops" || mood === "hungry" ? 2.4 : 0;
   return (
     <G>
       <Circle cx={cx} cy={70 + down} r={r} fill="#FFFFFF" />
@@ -190,10 +264,12 @@ function Head({
   mood,
   closed,
   chewing,
+  outfit,
 }: {
   mood: PandaMood;
   closed: boolean;
   chewing: boolean;
+  outfit: Outfit;
 }) {
   return (
     <>
@@ -288,7 +364,7 @@ function Head({
       />
       <Path
         d={
-          mood === "oops"
+          mood === "oops" || mood === "hungry"
             ? "M100 96 V99 M92 105 Q100 99 108 105"
             : mood === "sleepy"
               ? "M100 96 V99.5 M95 101 Q100 104.5 105 101"
@@ -306,6 +382,58 @@ function Head({
           fill="#7CC1EC"
           opacity={0.9}
         />
+      )}
+      {outfit === "sprout" && (
+        <>
+          <Path
+            d="M100 21 Q98.6 12 100 5"
+            stroke="#3E9A55"
+            strokeWidth={2.6}
+            strokeLinecap="round"
+            fill="none"
+          />
+          <G transform="translate(100 7)">
+            <Leaf len={19} angle={-32} fill="#62B86C" vein="#2B7A45" />
+          </G>
+          <G transform="translate(100 9) scale(-1 1)">
+            <Leaf len={16} angle={-28} fill="#3E9A55" vein="#2B7A45" />
+          </G>
+        </>
+      )}
+      {outfit === "flower" && (
+        <>
+          {[0, 72, 144, 216, 288].map((angle) => (
+            <Ellipse
+              key={angle}
+              cx={138}
+              cy={21.5}
+              rx={5.8}
+              ry={8.4}
+              fill="#F58FA4"
+              stroke="#E0607A"
+              strokeWidth={0.7}
+              transform={`rotate(${angle} 138 29)`}
+            />
+          ))}
+          <Circle cx={138} cy={29} r={3.8} fill="#FBD66A" />
+        </>
+      )}
+      {outfit === "hat" && (
+        <>
+          <Ellipse cx={100} cy={42} rx={73} ry={9.5} fill="#C39A45" />
+          <Path
+            d="M27 42 L100 5 L173 42 Q100 57 27 42 Z"
+            fill="url(#panda-straw)"
+          />
+          <Path
+            d="M100 5 L58 46 M100 5 L79 49.5 M100 5 L100 50.5 M100 5 L121 49.5 M100 5 L142 46 M50 31 Q100 42 150 31 M72 20 Q100 26.5 128 20"
+            stroke="#B0832F"
+            strokeWidth={1}
+            strokeLinecap="round"
+            fill="none"
+            opacity={0.55}
+          />
+        </>
       )}
     </>
   );
@@ -411,6 +539,7 @@ export function Panda({
   still = false,
   pop = false,
   pulse = 0,
+  outfit = "none",
   style,
 }: {
   size?: number;
@@ -421,6 +550,7 @@ export function Panda({
   still?: boolean;
   pop?: boolean;
   pulse?: number;
+  outfit?: Outfit;
   style?: StyleProp<ViewStyle>;
 }) {
   const [closed, setClosed] = useState(false),
@@ -436,10 +566,11 @@ export function Panda({
   const face: PandaMood = joy && mood === "calm" ? "happy" : mood,
     moving = !still && !reduceMotion;
   const height = head ? size * 0.9 : size,
-    box = head ? "26 6 148 133" : "0 0 200 200",
+    // The face crop leaves room above the ears for a sprout or a hat.
+    box = head ? "22 -6 156 146" : "0 0 200 200",
     // The neck, in pixels, so the head turns about the right point.
     neck = head
-      ? `${(74 / 148) * size}px ${(118 / 133) * height}px`
+      ? `${(78 / 156) * size}px ${(130 / 146) * height}px`
       : `${size / 2}px ${0.62 * size}px`;
   const tween = (
     value: Animated.Value,
@@ -481,7 +612,7 @@ export function Panda({
 
   // Blinking, at uneven intervals, with the odd double blink.
   useEffect(() => {
-    if (!moving || face !== "calm") {
+    if (!moving || (face !== "calm" && face !== "hungry")) {
       setClosed(false);
       return;
     }
@@ -646,7 +777,7 @@ export function Panda({
           >
             <Svg width="100%" height="100%" viewBox={box}>
               <Gradients />
-              <Body bamboo={bamboo} cheer={cheer} />
+              <Body bamboo={bamboo} cheer={cheer} mood={face} outfit={outfit} />
             </Svg>
           </Animated.View>
         </>
@@ -694,7 +825,7 @@ export function Panda({
       >
         <Svg width="100%" height="100%" viewBox={box}>
           <Gradients />
-          <Head mood={face} closed={closed} chewing={chewing} />
+          <Head mood={face} closed={closed} chewing={chewing} outfit={outfit} />
         </Svg>
       </Animated.View>
       {bamboo && !head && (

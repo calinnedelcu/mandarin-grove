@@ -2,7 +2,14 @@ import React, { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stamp } from "./art";
-import { displayText, Lesson, lessons, Sentence, Word } from "./content";
+import {
+  displayText,
+  Lesson,
+  lessons,
+  Sentence,
+  speakers,
+  Word,
+} from "./content";
 import { coverage, glyphFor } from "./extras";
 import { Progress, saveWord, strength } from "./learning";
 import { C, F, s, shadow, topicInk } from "./theme";
@@ -126,6 +133,7 @@ export function Reader({
       audio.play(
         lesson.story.map((l, i) => ({
           text: l.text,
+          voice: l.speaker,
           lessonId: lesson.id,
           line: i,
         })),
@@ -355,6 +363,42 @@ export function Reader({
                     },
                   ]}
                 >
+                  {item.speaker && (
+                    <View style={[s.line, { gap: 8, marginBottom: 6 }]}>
+                      <View
+                        style={{
+                          width: 30,
+                          height: 30,
+                          borderRadius: 15,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor:
+                            item.speaker === "L" ? C.coralWash : C.skyWash,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontFamily: F.kaiBold,
+                            fontSize: 16,
+                            lineHeight: 20,
+                            color: item.speaker === "L" ? C.coralDeep : C.sky,
+                          }}
+                        >
+                          {speakers[item.speaker].zh[0]}
+                        </Text>
+                      </View>
+                      <Text
+                        style={{
+                          fontFamily: F.kai,
+                          fontSize: 15,
+                          color: C.ink,
+                        }}
+                      >
+                        {speakers[item.speaker].zh}
+                      </Text>
+                      <Text style={s.caption}>{speakers[item.speaker].en}</Text>
+                    </View>
+                  )}
                   <View
                     style={[
                       s.wrap,
@@ -387,12 +431,27 @@ export function Reader({
                             ]}
                           >
                             {settings.pinyin && <Pinyin word={phrase.word} />}
-                            <Hanzi
-                              word={phrase.word}
-                              size={settings.fontSize}
-                              colored={false}
-                              traditional={settings.traditional}
-                            />
+                            {/* Punctuation stays against its word, on the hanzi line. */}
+                            <View style={{ flexDirection: "row" }}>
+                              <Hanzi
+                                word={phrase.word}
+                                size={settings.fontSize}
+                                colored={false}
+                                traditional={settings.traditional}
+                              />
+                              {!!phrase.tail && (
+                                <Text
+                                  style={{
+                                    fontFamily: F.kai,
+                                    fontSize: settings.fontSize,
+                                    lineHeight: settings.fontSize * 1.35,
+                                    color: C.ink,
+                                  }}
+                                >
+                                  {phrase.tail}
+                                </Text>
+                              )}
+                            </View>
                             {settings.gloss && (
                               <Text
                                 numberOfLines={2}
@@ -411,7 +470,7 @@ export function Reader({
                             )}
                           </Pressable>
                         )}
-                        {!!phrase.tail && (
+                        {!phrase.word && !!phrase.tail && (
                           <Text
                             style={{
                               fontFamily: F.kai,
@@ -442,7 +501,12 @@ export function Reader({
                       onPress={() => {
                         position(i);
                         audio.play([
-                          { text: item.text, lessonId: lesson.id, line: i },
+                          {
+                            text: item.text,
+                            voice: item.speaker,
+                            lessonId: lesson.id,
+                            line: i,
+                          },
                         ]);
                       }}
                     />
@@ -592,8 +656,8 @@ export function Reader({
               </Pressable>
               <View style={{ flex: 1 }}>
                 <View style={s.row}>
-                  <Text style={s.caption}>
-                    Sentence {line + 1} of {lesson.story.length}
+                  <Text style={s.caption} numberOfLines={1}>
+                    Line {line + 1} of {lesson.story.length}
                   </Text>
                   <View style={[s.line, { gap: 4 }]}>
                     {rates.map((rate) => (

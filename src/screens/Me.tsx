@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { AppCtx } from "../app";
-import { Bamboo, GroveScene, Ring, Stamp } from "../art";
+import { Bamboo, GrovePlot, GroveScene, Ring, Stamp } from "../art";
 import { Panda } from "../Panda";
 import { Level, lessons, words } from "../content";
-import { achievements, rankFor } from "../extras";
+import { achievements, outfitFor, rankFor, wardrobe } from "../extras";
 import { dayKey } from "../learning";
 import { C, F } from "../theme";
 import { GlyphTile, Meter, Row, s, Section, Stat, Zh } from "../ui";
@@ -58,7 +58,7 @@ export function Me({ app }: { app: AppCtx }) {
               justifyContent: "center",
             }}
           >
-            <Panda head size={76} mood="happy" />
+            <Panda head size={76} mood="happy" outfit={outfitFor(p)} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[s.eyebrow, { color: C.onDarkMuted }]}>
@@ -153,10 +153,109 @@ export function Me({ app }: { app: AppCtx }) {
         </View>
       </View>
 
-      <View style={[s.row, { marginBottom: 10 }]}>
-        <Stat value={`${deck.saved.length}`} label="words planted" />
-        <Stat value={`${deck.strong}`} label="strong words" color={C.primary} />
+      <Section
+        title="Your grove"
+        zh="林"
+        caption={`${deck.saved.length} planted`}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Your grove: ${deck.saved.length} words planted. Open your deck`}
+        onPress={() => app.go("Words")}
+        style={[s.card, { padding: 10 }]}
+      >
+        <GrovePlot
+          strong={deck.strong}
+          growing={deck.growing}
+          fresh={deck.fresh}
+          height={deck.saved.length ? 150 : 96}
+        />
+        <View style={[s.row, { paddingHorizontal: 8, paddingTop: 12 }]}>
+          {[
+            [`${deck.strong}`, "tall and strong"],
+            [`${deck.growing}`, "growing"],
+            [`${deck.fresh}`, "new shoots"],
+          ].map(([value, label]) => (
+            <View key={label} style={{ flex: 1, alignItems: "center" }}>
+              <Text style={[s.statNumber, { fontSize: 22, lineHeight: 26 }]}>
+                {value}
+              </Text>
+              <Text style={s.caption}>{label}</Text>
+            </View>
+          ))}
+        </View>
+        <Text
+          style={[
+            s.caption,
+            { textAlign: "center", marginTop: 8, marginBottom: 4 },
+          ]}
+        >
+          {deck.saved.length
+            ? "Every word you plant becomes a bamboo. Review makes it grow."
+            : "Plant your first word and a shoot appears here."}
+        </Text>
+      </Pressable>
+
+      <Section title="Wardrobe" zh="衣" caption={`Rank ${rank.index + 1}`} />
+      <View style={[s.card, { paddingVertical: 16 }]}>
+        <View style={[s.wrap, { gap: 0, rowGap: 14 }]}>
+          {wardrobe.map((item) => {
+            const open = item.rank <= rank.index,
+              worn = outfitFor(p) === item.outfit;
+            return (
+              <Pressable
+                key={item.outfit}
+                accessibilityRole="button"
+                accessibilityLabel={`${item.name}${open ? "" : `, unlocks at rank ${item.rank + 1}`}`}
+                accessibilityState={{ selected: worn, disabled: !open }}
+                disabled={!open}
+                onPress={() =>
+                  app.update((prev) => ({
+                    ...prev,
+                    settings: { ...prev.settings, outfit: item.outfit },
+                  }))
+                }
+                style={{ width: "33.33%", alignItems: "center", gap: 4 }}
+              >
+                <View
+                  style={{
+                    width: 78,
+                    height: 78,
+                    borderRadius: 24,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: worn ? C.primaryWash : C.bg,
+                    borderWidth: 2,
+                    borderColor: worn ? C.primary : "transparent",
+                    opacity: open ? 1 : 0.35,
+                  }}
+                >
+                  <Panda still size={70} outfit={item.outfit} />
+                </View>
+                <Text
+                  style={[
+                    s.caption,
+                    { fontSize: 11.5, color: open ? C.ink2 : C.faint },
+                  ]}
+                >
+                  {open ? item.name : `Rank ${item.rank + 1}`}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View style={[s.row, { marginTop: 4 }]}>
         <Stat value={`${p.completed.length}`} label="readings read" />
+        <Stat
+          value={attempts ? `${Math.round((correct / attempts) * 100)}%` : "—"}
+          label="quiz accuracy"
+        />
+        <Stat
+          value={`${Math.floor(totals.readSeconds / 60)}`}
+          label="minutes reading"
+        />
       </View>
 
       <Section title="Twelve weeks" zh="日" caption={`Goal ${goal} XP`} />
@@ -277,7 +376,7 @@ export function Me({ app }: { app: AppCtx }) {
         </Text>
       </View>
 
-      <Section title="Your grove" zh="设" />
+      <Section title="Settings" zh="设" />
       <Row
         title="Level, goal & interests"
         caption={`HSK ${p.settings.level} · ${goal} XP a day · backup and restore`}

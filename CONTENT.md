@@ -1,5 +1,15 @@
 # Curriculum, pronunciation and data provenance
 
+## 14 November 2026: the Chengdu dialogues
+
+Three story families were added, each in HSK 1, 2 and 3 versions, bringing the total to **51 readings**: *Welcome to Chengdu*, *Tea in the park* and *Breakfast with Pangpang*. They are dialogues between 乐乐 (Lele) and 大山 (Dashan), with the panda 胖胖. Like every reading here they are original practice text, written for this app and checked by the same audit: every character is covered by a tappable vocabulary entry, and words above a version's level are disclosed as a stretch. **They have not been read by a native speaker or a Chinese teacher**; that review is still the most useful check before anyone relies on them.
+
+Six entries were appended to the vocabulary for these stories, which now has **624 entries**: 成都, 茶馆 and 竹子, and the names 乐乐, 大山 and 胖胖. They are labelled HSK 1 as building blocks; none is part of the HSK lists. 竹 has no bundled stroke data, so 竹子 can be looked up and reviewed but not traced. The classifier reading zhī of 只 now also applies before 熊猫.
+
+Every reading is assigned to one of seven places in Chengdu (`src/places.ts`). The short notes about the places describe real locations in general terms; the stories set there are fiction.
+
+The rest of this document describes the 1 October 2026 curriculum and remains accurate apart from the two totals above.
+
 Updated October 1, 2026. Mandarin Grove teaches beginners through intermediate learners, with every curriculum entry and study-level choice capped at **HSK 3**.
 
 ## Bundled vocabulary

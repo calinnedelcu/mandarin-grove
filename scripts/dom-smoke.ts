@@ -154,6 +154,12 @@ export async function runDomSmoke() {
     await click("Let's grow →");
     await waitFor(() => getByText(body, "Today's three steps"));
     await click("Path", "tab");
+    await click("Chengdu East Station");
+    await click("Welcome to Chengdu · HSK 1");
+    await waitFor(() => assert.ok(getAllByText(body, "Dashan").length > 0));
+    await waitFor(() => assert.ok(getAllByText(body, "Lele").length > 0));
+    await click("Close lesson");
+    await click("People's Park");
     await click("Tea for two · HSK 1");
     await waitFor(() => getByText(body, "A tiny reading"));
     fireEvent.click(getAllByRole(body, "button", { name: /^茶 ·/ })[0]);
@@ -191,6 +197,7 @@ export async function runDomSmoke() {
     await click("Good · 1 day(s)");
     await click("Back to the grove");
     await click("Path", "tab");
+    await click("Chengdu East Station");
     await click("A little hello · HSK 1");
     await click("Check what stuck →");
     for (let i = 0; i < 8; i++) {
@@ -232,6 +239,7 @@ export async function runDomSmoke() {
     await click("Close word details");
     await click("Path", "tab");
     await click("HSK 2");
+    await click("Jinli Street");
     await click("A slower morning · HSK 2");
     await click("HSK 3");
     await click("Story comprehension →");
@@ -422,6 +430,7 @@ export async function runDomSmoke() {
       timeout: 10000,
     });
     await click("Path", "tab");
+    await click("People's Park");
     await click("Tea for two · HSK 1");
     await click("Play story audio");
     await waitFor(() =>
@@ -438,6 +447,7 @@ export async function runDomSmoke() {
       timeout: 10000,
     });
     await click("Path", "tab");
+    await click("People's Park");
     await click("Tea for two · HSK 1");
     await click("Play story audio");
     await waitFor(() =>
@@ -453,7 +463,7 @@ export async function runDomSmoke() {
     );
     assert.deepEqual(errors, []);
     console.log(
-      "Passed: exported-app DOM, onboarding, path, dictionary, SRS, 8-question quiz, three comprehension formats, HSK versions, reader preferences, bookmarks, grammar library, speech rate/queue/cancellation, character demo, sentence building/writing, dictation, matching pairs, tone studio, pinyin keyboard, sprint, Zen, brush practice, backup code, radio, persisted rehydration and v1 migration. Device audio and visual layout are not simulated.",
+      "Passed: exported-app DOM, onboarding, Chengdu map, dialogue speakers, dictionary, SRS, 8-question quiz, three comprehension formats, HSK versions, reader preferences, bookmarks, grammar library, speech rate/queue/cancellation, character demo, sentence building/writing, dictation, matching pairs, tone studio, pinyin keyboard, sprint, Zen, brush practice, backup code, radio, persisted rehydration and v1 migration. Device audio and visual layout are not simulated.",
     );
   } finally {
     dom.window.close();
