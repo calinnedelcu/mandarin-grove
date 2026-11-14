@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { AppCtx } from "../app";
+import { Tip } from "./Tip";
 import { GroveScene, ToneContour } from "../art";
 import { Panda } from "../Panda";
 import { toneColors, Word, words } from "../content";
@@ -221,6 +222,10 @@ export function Practice({ app }: { app: AppCtx }) {
   return (
     <>
       <PageTitle zh="练" pinyin="liàn · practise" title="A little, often." />
+      <Tip id="tip-practice" app={app}>
+        Start with the review: it brings back the words that are due today. The
+        drills below are extra, for when you want more.
+      </Tip>
 
       <View style={s.darkCard}>
         <GroveScene dark sun={false} height={190} />

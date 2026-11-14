@@ -152,6 +152,17 @@ export async function runDomSmoke() {
     });
     await click("Start as a beginner");
     await click("Let's grow →");
+    // A new learner is shown the tour first.
+    await waitFor(() => getByText(body, "Three small steps a day."));
+    await click("Next");
+    await click("Try the word 喝");
+    await waitFor(() => assert.ok(getAllByText(body, "to drink").length > 0));
+    await click("Next");
+    await waitFor(() => getByText(body, "Plant the words you want."));
+    await click("Next");
+    await click("Next");
+    await click("Look around first");
+    await waitFor(() => assert.ok(progress().hints.includes("tour")));
     await waitFor(() => getByText(body, "Today's three steps"));
     await click("Path", "tab");
     await click("Chengdu East Station");
@@ -377,6 +388,9 @@ export async function runDomSmoke() {
     await click("Settings");
     await click("HSK 3");
     await click("100 XP · Curious");
+    await click("Replay the tour");
+    await waitFor(() => getByText(body, "Three small steps a day."));
+    await click("Skip the tour");
     await click("Create a backup code");
     await waitFor(() =>
       assert.ok(
@@ -474,7 +488,7 @@ export async function runDomSmoke() {
     );
     assert.deepEqual(errors, []);
     console.log(
-      "Passed: exported-app DOM, onboarding, Chengdu map, dialogue speakers, linked daily steps and celebration, primer, dictionary, SRS, 8-question quiz, three comprehension formats, HSK versions, reader preferences, bookmarks, grammar library, speech rate/queue/cancellation, character demo, sentence building/writing, dictation, matching pairs, tone studio, pinyin keyboard, sprint, Zen, brush practice, backup code, radio, persisted rehydration and v1 migration. Device audio and visual layout are not simulated.",
+      "Passed: exported-app DOM, onboarding, tour, Chengdu map, dialogue speakers, linked daily steps and celebration, primer, dictionary, SRS, 8-question quiz, three comprehension formats, HSK versions, reader preferences, bookmarks, grammar library, speech rate/queue/cancellation, character demo, sentence building/writing, dictation, matching pairs, tone studio, pinyin keyboard, sprint, Zen, brush practice, backup code, radio, persisted rehydration and v1 migration. Device audio and visual layout are not simulated.",
     );
   } finally {
     dom.window.close();

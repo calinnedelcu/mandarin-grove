@@ -22,10 +22,13 @@ export function SettingsBody({
   p,
   onChange,
   onNotice,
+  onTour,
 }: {
   p: Progress;
   onChange: (update: (p: Progress) => Progress) => void;
   onNotice: (message: string) => void;
+  /** Show the introductory tour again. */
+  onTour: () => void;
 }) {
   const [backup, setBackup] = useState(""),
     [incoming, setIncoming] = useState(""),
@@ -110,6 +113,13 @@ export function SettingsBody({
           </Text>
         </>
       )}
+      <Section title="Help" zh="帮" />
+      <Button
+        light
+        icon="map-outline"
+        label="Replay the tour"
+        onPress={onTour}
+      />
       <Section title="Backup" zh="存" />
       <Text style={s.caption}>
         Progress lives only on this device. Keep a backup code somewhere safe,

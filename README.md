@@ -32,6 +32,8 @@ Grove Radio plays a shuffled, finite playlist at your level with skip, pause and
 
 `npx expo export --platform web` produces a static site in `dist/` that is also an installable web app: it has a manifest and home-screen icons (`public/`), and a service worker (`public/sw.js`) that caches the page, the bundle and the fonts on the first visit, so it then opens without a connection. Recordings are cached as they are played; a line never heard falls back to the device voice when offline. The app is published at **https://calinnedelcu.github.io/mandarin-grove/** by `.github/workflows/pages.yml`, which rebuilds it on every push to `main`. GitHub Pages serves it under `/mandarin-grove`, so the workflow sets `BASE_URL` (read by `app.config.js`); every other path in `public/` is relative, so the same build also works at a domain root.
 
+A new learner is shown a five-step **tour** straight after onboarding (`src/Tour.tsx`): the three daily steps, tapping a word (done by tapping one), planting it (done by planting it), feeding the panda, and the map. It ends by offering the first reading and can be replayed from Me → Settings → Help. Each tab also shows a one-line tip on the first visit, dismissed for good.
+
 Beginners get a three-page **pinyin and tones** intro, offered on Today at HSK 1 and always available under Practice → Tones.
 
 ## Design

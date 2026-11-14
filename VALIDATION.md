@@ -1,5 +1,9 @@
 # Validation
 
+## 14 November 2026, night: the tour
+
+`npx tsc --noEmit`, `npm test`, the web export and `npm run test:dom` **pass**; the DOM test walks the tour after onboarding and replays it from Settings. Seen in a browser at 375 px: all five tour pages, tapping a word, planting it (confirmed in saved progress), and the first-visit tip on Path. The tips on Practice, Words and Me were not looked at.
+
 ## 14 November 2026, evening: one-character recordings and publishing
 
 One-character words now have studio recordings where their tone could be confirmed by measurement: 234 of 266 (see `scripts/audio-check.json` and the Speech section of the README). A first attempt to verify them by transcribing each clip was abandoned: the transcriber returned nothing for 91 clips and confused near-homophones, so it could neither confirm nor reject a tone. The pitch measurement that replaced it found the real problem (bare single syllables often spoken with a falling, sentence-final contour) and is what decides whether a take is kept. **It is a measurement, not a human review.**

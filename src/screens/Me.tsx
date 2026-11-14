@@ -9,6 +9,7 @@ import { dayKey } from "../learning";
 import { C, F } from "../theme";
 import { Meter, s, Section, Segmented, Stat, Zh } from "../ui";
 import { SettingsBody } from "../Settings";
+import { Tip } from "./Tip";
 
 const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
 
@@ -47,6 +48,10 @@ export function Me({ app }: { app: AppCtx }) {
 
   return (
     <>
+      <Tip id="tip-me" app={app}>
+        Your panda, your grove and what it wears are here. Progress has your
+        calendar and badges; Settings has your level, sound and backup.
+      </Tip>
       <Segmented
         options={["Panda", "Progress", "Settings"] as const}
         value={view}
@@ -423,7 +428,12 @@ export function Me({ app }: { app: AppCtx }) {
         </>
       )}
       {view === "Settings" && (
-        <SettingsBody p={p} onChange={app.update} onNotice={app.notify} />
+        <SettingsBody
+          p={p}
+          onChange={app.update}
+          onNotice={app.notify}
+          onTour={app.openTour}
+        />
       )}
     </>
   );

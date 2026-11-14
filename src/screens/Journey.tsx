@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import { AppCtx } from "../app";
+import { Tip } from "./Tip";
 import { Lesson, lessons, Level, topics } from "../content";
 import { glyphFor, pathUnits } from "../extras";
 import { Panda } from "../Panda";
@@ -128,6 +129,10 @@ export function Journey({ app }: { app: AppCtx }) {
         pinyin="lù · the path"
         title="A walk through Chengdu."
       />
+      <Tip id="tip-path" app={app}>
+        Each picture is a place in Chengdu. Tap one to see what it is and to
+        open its readings. The panda marks where you are.
+      </Tip>
       <Segmented
         options={["Map", "Library"] as const}
         value={view}

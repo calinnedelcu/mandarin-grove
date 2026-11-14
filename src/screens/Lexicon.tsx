@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { AppCtx } from "../app";
+import { Tip } from "./Tip";
 import { Panda } from "../Panda";
 import { lessons, Word, words } from "../content";
 import { searchWord, strength } from "../learning";
@@ -112,6 +113,10 @@ export function Lexicon({ app }: { app: AppCtx }) {
         title={`${words.length} words to keep.`}
         caption="Tap a word to hear it, see inside its characters and plant it in your deck."
       />
+      <Tip id="tip-words" app={app}>
+        Every word in the app is in the dictionary. The ones you planted are in
+        My deck, weakest first, and Grammar keeps a pattern from each story.
+      </Tip>
       <Segmented
         options={["Dictionary", "My deck", "Grammar"] as const}
         value={view}

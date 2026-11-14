@@ -60,6 +60,7 @@ import { DayDone } from "./src/DayDone";
 import { placeOf, readingsAt } from "./src/places";
 import { Radio } from "./src/Radio";
 import { Primer } from "./src/Primer";
+import { Tour } from "./src/Tour";
 import { WritingStudio } from "./src/WritingStudio";
 import { Today } from "./src/screens/Today";
 import { Journey } from "./src/screens/Journey";
@@ -89,6 +90,7 @@ function AppContent() {
     [reviewQueue, setReviewQueue] = useState<string[] | null>(null);
   const [now, setNow] = useState(Date.now()),
     [primerOpen, setPrimerOpen] = useState(false),
+    [tourOpen, setTourOpen] = useState(false),
     [celebrate, setCelebrate] = useState(false),
     [round, setRound] = useState(0),
     [writingOpen, setWritingOpen] = useState(false),
@@ -245,7 +247,14 @@ function AppContent() {
   // Once a day, when all three steps are done and nothing else is open,
   // mark the moment.
   const allDone = plan.every((item) => item.done),
-    busy = !!(lesson || session || pairs || reviewQueue || listening);
+    busy = !!(
+      lesson ||
+      session ||
+      pairs ||
+      reviewQueue ||
+      listening ||
+      tourOpen
+    );
   useEffect(() => {
     if (!ready || !p.onboarded || !allDone || busy) return;
     if (p.celebrated === todayKey) return;
@@ -421,6 +430,15 @@ function AppContent() {
     setSleepMinutes(0);
   }
 
+  function closeTour() {
+    audio.stop();
+    setTourOpen(false);
+    setP((prev) =>
+      prev.hints?.includes("tour")
+        ? prev
+        : { ...prev, hints: [...(prev.hints || []), "tour"] },
+    );
+  }
   // The day's next undone step, offered at the end of an activity so the
   // learner never has to go and look for what comes next.
   function nextStep(close: () => void) {
@@ -475,9 +493,11 @@ function AppContent() {
     return (
       <Onboarding
         initial={p.settings}
-        onFinish={(settings) =>
-          setP((prev) => ({ ...prev, onboarded: true, settings }))
-        }
+        onFinish={(settings) => {
+          setP((prev) => ({ ...prev, onboarded: true, settings }));
+          // A new learner is shown how the app works before anything else.
+          setTourOpen(true);
+        }}
       />
     );
 
@@ -518,6 +538,10 @@ function AppContent() {
       setPairs(pool.length ? pool : fallback);
     },
     startRadio,
+    openTour: () => {
+      audio.stop();
+      setTourOpen(true);
+    },
     openPrimer: () => {
       audio.stop();
       setPrimerOpen(true);
@@ -779,6 +803,19 @@ function AppContent() {
           planted={deck.saved.length}
           outfit={outfitFor(p)}
           onClose={() => setCelebrate(false)}
+        />
+      )}
+      {tourOpen && (
+        <Tour
+          audio={audio}
+          planted={(w) => !!p.cards[w.id]}
+          outfit={outfitFor(p)}
+          onPlant={plant}
+          onStart={() => {
+            closeTour();
+            openLesson(today);
+          }}
+          onClose={closeTour}
         />
       )}
       {primerOpen && (
