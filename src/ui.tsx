@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
+  Animated,
   Pressable,
   StyleProp,
   Text,
@@ -45,7 +46,7 @@ export function Button({
   icon?: IconName;
   style?: StyleProp<ViewStyle>;
 }) {
-  const color = light && !accent ? C.ink : "#FFFFFF";
+  const color = light ? C.ink : "#FFFFFF";
   return (
     <Pressable
       accessibilityRole="button"
@@ -56,7 +57,7 @@ export function Button({
       onPress={onPress}
       style={({ pressed }) => [
         s.button,
-        light && !accent && s.lightButton,
+        light && s.lightButton,
         {
           opacity: disabled ? 0.45 : 1,
           // The button sinks onto its darker edge when pressed.
@@ -314,22 +315,35 @@ export function Meter({
   track?: string;
   slim?: boolean;
 }) {
+  const target = Math.max(0, Math.min(100, value || 0)),
+    width = useRef(new Animated.Value(target)).current;
+  // The bar slides to a new value rather than jumping.
+  useEffect(() => {
+    Animated.timing(width, {
+      toValue: target,
+      duration: 380,
+      useNativeDriver: false,
+    }).start();
+  }, [target]);
   return (
     <View
       style={[
         s.track,
         track ? { backgroundColor: track } : null,
-        slim && { marginVertical: 6, height: 4 },
+        slim && { marginVertical: 6, height: 5 },
       ]}
     >
-      <View
+      <Animated.View
         style={[
           s.fill,
           {
-            width: `${Math.max(0, Math.min(100, value))}%`,
+            width: width.interpolate({
+              inputRange: [0, 100],
+              outputRange: ["0%", "100%"],
+            }),
             backgroundColor: color,
           },
-          slim && { height: 4 },
+          slim && { height: 5 },
         ]}
       />
     </View>

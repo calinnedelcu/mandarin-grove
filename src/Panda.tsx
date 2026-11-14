@@ -40,6 +40,9 @@ AccessibilityInfo.addEventListener("reduceMotionChanged", (v) => {
   reduceMotion = v;
 });
 
+/** True when the device asks for less motion. */
+export const motionReduced = () => reduceMotion;
+
 const FUR = "url(#panda-fur)",
   INK = "url(#panda-ink)",
   PAD = "#7C8A81";

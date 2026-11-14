@@ -39,6 +39,7 @@ import {
   dailyPlan,
   deckStats,
   nextOnPath,
+  outfitFor,
   pinDaily,
   trickyWords,
 } from "./src/extras";
@@ -55,8 +56,10 @@ import { WordSheet } from "./src/WordSheet";
 import { Quiz } from "./src/Quiz";
 import { MatchPairs } from "./src/MatchPairs";
 import { Review } from "./src/Review";
+import { DayDone } from "./src/DayDone";
+import { placeOf, readingsAt } from "./src/places";
 import { Radio } from "./src/Radio";
-import { Settings } from "./src/Settings";
+import { Primer } from "./src/Primer";
 import { WritingStudio } from "./src/WritingStudio";
 import { Today } from "./src/screens/Today";
 import { Journey } from "./src/screens/Journey";
@@ -85,7 +88,9 @@ function AppContent() {
     [pairs, setPairs] = useState<Word[] | null>(null),
     [reviewQueue, setReviewQueue] = useState<string[] | null>(null);
   const [now, setNow] = useState(Date.now()),
-    [settingsOpen, setSettingsOpen] = useState(false),
+    [primerOpen, setPrimerOpen] = useState(false),
+    [celebrate, setCelebrate] = useState(false),
+    [round, setRound] = useState(0),
     [writingOpen, setWritingOpen] = useState(false),
     [listening, setListening] = useState(false),
     [sleepMinutes, setSleepMinutes] = useState(0),
@@ -237,6 +242,17 @@ function AppContent() {
     ? deck.saved
     : words.filter((w) => w.level <= p.settings.level).slice(0, 20);
 
+  // Once a day, when all three steps are done and nothing else is open,
+  // mark the moment.
+  const allDone = plan.every((item) => item.done),
+    busy = !!(lesson || session || pairs || reviewQueue || listening);
+  useEffect(() => {
+    if (!ready || !p.onboarded || !allDone || busy) return;
+    if (p.celebrated === todayKey) return;
+    setP((prev) => ({ ...prev, celebrated: todayKey }));
+    setCelebrate(true);
+    if (p.settings.sounds) playEffect("complete");
+  }, [allDone, busy, ready, p.onboarded, p.celebrated, todayKey]);
   function chime(effect: Effect) {
     if (p.settings.sounds) playEffect(effect);
   }
@@ -266,6 +282,8 @@ function AppContent() {
     setLesson(null);
     setWord(null);
     setPairs(null);
+    // A new key, so a quiz started from another quiz begins afresh.
+    setRound((v) => v + 1);
     setSession(next);
   }
   function wordQuiz(
@@ -403,6 +421,47 @@ function AppContent() {
     setSleepMinutes(0);
   }
 
+  // The day's next undone step, offered at the end of an activity so the
+  // learner never has to go and look for what comes next.
+  function nextStep(close: () => void) {
+    const step = plan.find((item) => !item.done && !item.idle);
+    if (!step) return null;
+    const run = (action: () => void) => () => {
+      close();
+      action();
+    };
+    return step.key === "review"
+      ? {
+          label: "Next: remember your words →",
+          run: run(() => setReviewQueue(due.map((w) => w.id))),
+        }
+      : step.key === "read"
+        ? {
+            label: `Next: read “${today.title}” →`,
+            run: run(() => openLesson(today)),
+          }
+        : { label: "Next: a short practice →", run: run(smartPractice) };
+  }
+  /** After a quiz: the day's next step, else the next reading at that place. */
+  function afterQuiz(lessonId: string | null) {
+    const step = nextStep(() => setSession(null));
+    if (step) return step;
+    const finished = lessons.find((l) => l.id === lessonId),
+      sibling =
+        finished &&
+        readingsAt(placeOf(finished), finished.level).find(
+          (l) => l.id !== finished.id && !p.completed.includes(l.id),
+        );
+    return sibling
+      ? {
+          label: `Next reading: “${sibling.title}” →`,
+          run: () => {
+            setSession(null);
+            openLesson(sibling);
+          },
+        }
+      : null;
+  }
   if (!ready || !(fontsLoaded || fontError || fontWait))
     return (
       <SafeAreaView style={[s.root, s.center]}>
@@ -435,6 +494,7 @@ function AppContent() {
     resume,
     plan,
     go: (next) => {
+      void Haptics.selectionAsync().catch(() => {});
       audio.stop();
       setWord(null);
       setTab(next);
@@ -458,7 +518,10 @@ function AppContent() {
       setPairs(pool.length ? pool : fallback);
     },
     startRadio,
-    openSettings: () => setSettingsOpen(true),
+    openPrimer: () => {
+      audio.stop();
+      setPrimerOpen(true);
+    },
     openWriting: () => {
       audio.stop();
       setWritingOpen(true);
@@ -632,6 +695,9 @@ function AppContent() {
             setLesson(null);
           }}
           onLesson={openLesson}
+          next={readingsAt(placeOf(lesson), lesson.level).find(
+            (l) => l.id !== lesson.id && !p.completed.includes(l.id),
+          )}
           onProgress={setP}
           onWordSave={plant}
           onWrite={written}
@@ -651,7 +717,9 @@ function AppContent() {
       )}
       {session && (
         <Quiz
+          key={round}
           session={session}
+          after={afterQuiz(session.lessonId)}
           audio={audio}
           onAnswer={onAnswer}
           onComplete={(score, total) =>
@@ -694,6 +762,7 @@ function AppContent() {
       {reviewQueue !== null && (
         <Review
           queue={reviewQueue}
+          next={nextStep(() => setReviewQueue(null))}
           p={p}
           audio={audio}
           onGrade={gradeReview}
@@ -703,12 +772,27 @@ function AppContent() {
           }}
         />
       )}
-      {settingsOpen && (
-        <Settings
-          p={p}
-          onChange={setP}
-          onNotice={setNotice}
-          onClose={() => setSettingsOpen(false)}
+      {celebrate && (
+        <DayDone
+          xp={dailyXP}
+          streak={streak}
+          planted={deck.saved.length}
+          outfit={outfitFor(p)}
+          onClose={() => setCelebrate(false)}
+        />
+      )}
+      {primerOpen && (
+        <Primer
+          audio={audio}
+          onClose={() => {
+            audio.stop();
+            setPrimerOpen(false);
+            setP((prev) =>
+              prev.hints?.includes("primer")
+                ? prev
+                : { ...prev, hints: [...(prev.hints || []), "primer"] },
+            );
+          }}
         />
       )}
       {writingOpen && (

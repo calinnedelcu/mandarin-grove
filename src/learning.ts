@@ -24,6 +24,8 @@ export type Settings = {
   sounds: boolean;
   /** What the panda wears; unset means the newest thing earned. */
   outfit?: string;
+  /** Read one line at a time instead of the whole page. */
+  focus?: boolean;
 };
 export type Activity = {
   xp: number;
@@ -62,6 +64,10 @@ export type Progress = {
   writing: Record<string, number>;
   /** The reading pinned for a calendar day, so finishing it does not swap it. */
   daily?: { day: string; lessonId: string };
+  /** The day whose finished path has already been celebrated. */
+  celebrated?: string;
+  /** One-time hints the learner has already dismissed. */
+  hints?: string[];
 };
 export const defaultSettings: Settings = {
   level: 1,
@@ -431,6 +437,8 @@ export function parseProgress(raw: string): Progress {
     typeof p.daily.lessonId !== "string"
   )
     delete parsed.daily;
+  if (typeof parsed.celebrated !== "string") delete parsed.celebrated;
+  if (!strings(parsed.hints)) delete parsed.hints;
   return parsed;
 }
 export function checkTyped(input: string, expected: string, pinyin = false) {

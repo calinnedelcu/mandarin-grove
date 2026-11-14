@@ -34,7 +34,7 @@ export type AppCtx = {
   launch: (session: Session) => void;
   startPairs: (pool: Word[]) => void;
   startRadio: () => void;
-  openSettings: () => void;
+  openPrimer: () => void;
   openWriting: () => void;
   notify: (message: string) => void;
 };

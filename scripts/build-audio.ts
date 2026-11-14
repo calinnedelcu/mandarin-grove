@@ -2,7 +2,8 @@
 // app reads. Nothing here runs inside the app: the app only plays the files.
 //
 //   npm run audio -- samples            three short voice samples in audio-samples/
-//   npm run audio -- voice [--limit n]  every story sentence, multi-character word and saying
+//   npm run audio -- voice [--limit n]  every story sentence, word and saying
+//   npm run audio -- singles            record one-character words, keeping only takes whose pitch fits the tone
 //   npm run audio -- sfx                the four interface sounds
 //   npm run audio -- manifest           rebuild src/data/audio.ts from the files on disk
 //
@@ -13,7 +14,9 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import { lessons, words } from "../src/content";
+import { pinyin } from "pinyin-pro";
+import { Contour, contourOf } from "./pitch";
+import { lessons, tone, words } from "../src/content";
 import { pandaLines, proverbs } from "../src/extras";
 import { places } from "../src/places";
 
@@ -26,6 +29,10 @@ const config = JSON.parse(
   settings: Record<string, number | boolean>;
   /** Characters who speak with a voice of their own, by speaker key. */
   speakers: Record<string, { id: string; name: string }>;
+  /** The speech-to-text model used to check one-character clips. */
+  transcriber?: string;
+  /** The middle of the main voice's pitch range, in semitones above 100 Hz. */
+  middle?: number;
   samples: { id: string; name: string }[];
   sfx: { name: string; prompt: string; seconds: number }[];
 };
@@ -54,6 +61,7 @@ async function request(
     method: "POST",
     headers: { "xi-api-key": key(), "content-type": "application/json" },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(60000),
   });
   if (res.ok) return Buffer.from(await res.arrayBuffer());
   if ((res.status === 429 || res.status >= 500) && attempt < 5) {
@@ -63,16 +71,86 @@ async function request(
   throw Error(`ElevenLabs ${res.status}: ${(await res.text()).slice(0, 200)}`);
 }
 
-function speak(voice: string, text: string) {
+function speak(voice: string, text: string, extra: object = {}) {
   return request(`/v1/text-to-speech/${voice}?output_format=mp3_44100_64`, {
     text,
     model_id: config.model,
     language_code: "zh",
     voice_settings: config.settings,
+    ...extra,
   });
 }
 
 type Clip = { key: string; text: string; voice: string };
+
+// A single character is the risky case. Asked for one bare syllable, the
+// voice often lets sentence intonation win over the word's tone: a first
+// tone that falls like a fourth, a fourth that stays high. A wrong tone in
+// a language app teaches a mistake, so a one-character clip is only shipped
+// if its measured pitch has the shape of its tone (`npm run audio -- singles`
+// records several takes and keeps the first that does). Characters with no
+// passing take, neutral-tone words and characters whose taught reading is
+// not their usual one are left out and keep the device voice.
+const checkFile = path.join(__dirname, "audio-check.json");
+type Check = {
+  ok: boolean;
+  why?: string;
+  take?: string;
+  /** Start, end and mean pitch, in semitones around the speaker's middle. */
+  shape?: [number, number, number];
+};
+const checks: Record<string, Check> = fs.existsSync(checkFile)
+  ? JSON.parse(fs.readFileSync(checkFile, "utf8"))
+  : {};
+/** Syllables spoken in the app that are not vocabulary entries. */
+const extraSyllables: Record<string, string> = { 麻: "má", 骂: "mà" };
+const single = (text: string) => Array.from(text).length === 1;
+const expected = (char: string) =>
+  extraSyllables[char] || words.find((w) => w.hanzi === char)?.pinyin || "";
+const plain = (syllable: string) =>
+  syllable.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+async function hear(file: string): Promise<string> {
+  const form = new FormData();
+  form.append("model_id", config.transcriber || "scribe_v1");
+  form.append("language_code", "zh");
+  form.append(
+    "file",
+    new Blob([fs.readFileSync(file)], { type: "audio/mpeg" }),
+    "clip.mp3",
+  );
+  const res = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+    method: "POST",
+    headers: { "xi-api-key": key() },
+    body: form,
+    signal: AbortSignal.timeout(60000),
+  }).catch(() => null);
+  if (!res) return "";
+  if (!res.ok) return "";
+  const text = ((await res.json()) as { text?: string }).text || "";
+  return text.replace(/[^\u3400-\u9FFF]/g, "");
+}
+
+/**
+ * Whether a contour has the shape of a tone. Pitch is measured in semitones
+ * around `config.middle`, the middle of the main voice's range.
+ */
+function fits(wanted: number, c: Contour) {
+  if (c.frames < 12) return false;
+  const middle = config.middle ?? 13,
+    start = c.start - middle,
+    end = c.end - middle,
+    mean = c.mean - middle,
+    low = c.low - middle;
+  if (wanted === 1)
+    return start >= 1.5 && mean >= 1 && Math.abs(end - start) <= 2.5;
+  if (wanted === 2) return end - start >= 3 && end >= 0;
+  if (wanted === 3)
+    return mean <= -1.5 && start <= 1.5 && low <= -3.5 && end - start <= 3;
+  if (wanted === 4) return start >= 2.5 && start - end >= 5;
+  return false;
+}
+
 const fileFor = (key: string) =>
   `${createHash("sha1").update(key).digest("hex").slice(0, 12)}.mp3`;
 
@@ -83,11 +161,7 @@ const fileFor = (key: string) =>
 function wanted(): Clip[] {
   const main = config.voice.id,
     lines = lessons.flatMap((l) => l.story),
-    // Single characters are left to the device voice: without context a
-    // synthetic voice cannot know which reading or tone is meant.
-    vocabulary = words
-      .filter((w) => Array.from(w.hanzi).length > 1)
-      .map((w) => w.hanzi),
+    vocabulary = words.map((w) => w.hanzi),
     all: Clip[] = [
       ...lines.map((line) => {
         const own = line.speaker && config.speakers[line.speaker];
@@ -104,6 +178,8 @@ function wanted(): Clip[] {
         ...proverbs.map((p) => p.zh),
         ...pandaLines.map((p) => p.zh),
         ...places.map((p) => p.zh),
+        ...Object.keys(extraSyllables),
+        "你好",
       ].map((text) => ({ key: text, text, voice: main })),
     ];
   return [...new Map(all.map((clip) => [clip.key, clip])).values()];
@@ -123,8 +199,10 @@ async function pool<T>(
 }
 
 function manifest() {
-  const made = wanted().filter((c) =>
-      fs.existsSync(path.join(voiceDir, fileFor(c.key))),
+  const made = wanted().filter(
+      (c) =>
+        fs.existsSync(path.join(voiceDir, fileFor(c.key))) &&
+        (!single(c.text) || checks[c.text]?.ok),
     ),
     entries = new Map(made.map((c) => [c.key, fileFor(c.key)]));
   // A line that exists only in a character's voice is also reachable by its
@@ -179,6 +257,93 @@ void (async () => {
       );
       console.log(`Sample: ${v.name}`);
     }
+  } else if (command === "singles") {
+    fs.mkdirSync(voiceDir, { recursive: true });
+    const todo = wanted().filter((c) => single(c.text) && !checks[c.text]);
+    console.log(`${todo.length} one-character clips to record and check.`);
+    const takes: [string, (ch: string) => [string, object]][] = [
+      ["bare", (ch) => [ch, {}]],
+      ["sentence", (ch) => [`${ch}。`, {}]],
+      ["prompted", (ch) => [`${ch}。`, { previous_text: "请跟我读：" }]],
+      [
+        "prompted, take 2",
+        (ch) => [`${ch}。`, { previous_text: "请跟我读：", seed: 2 }],
+      ],
+      ["sentence, take 2", (ch) => [`${ch}。`, { seed: 3 }]],
+      [
+        "prompted, take 3",
+        (ch) => [`${ch}。`, { previous_text: "请跟我读：", seed: 4 }],
+      ],
+    ];
+    let done = 0;
+    await pool(todo, 3, async (clip) => {
+      const ch = clip.text,
+        want = expected(ch),
+        file = path.join(voiceDir, fileFor(clip.key)),
+        scratch = `${file}.take`;
+      if (!tone(want))
+        checks[ch] = { ok: false, why: "neutral tone cannot be measured" };
+      else if (pinyin(ch) !== want)
+        checks[ch] = { ok: false, why: "taught reading is not the usual one" };
+      else {
+        checks[ch] = { ok: false, why: "no take had the shape of its tone" };
+        for (const [name, make] of takes) {
+          if (name === "bare" && fs.existsSync(file))
+            fs.copyFileSync(file, scratch);
+          else {
+            const [text, extra] = make(ch);
+            fs.writeFileSync(scratch, await speak(clip.voice, text, extra));
+          }
+          const contour = contourOf(scratch);
+          if (!fits(tone(want), contour)) continue;
+          // A transcript that names a different syllable vetoes the take.
+          const heard = await hear(scratch);
+          if (
+            Array.from(heard).length === 1 &&
+            !(pinyin(heard, { multiple: true, type: "array" }) as string[])
+              .map(plain)
+              .includes(plain(want))
+          )
+            continue;
+          fs.copyFileSync(scratch, file);
+          const middle = config.middle ?? 13;
+          checks[ch] = {
+            ok: true,
+            take: name,
+            shape: [
+              +(contour.start - middle).toFixed(1),
+              +(contour.end - middle).toFixed(1),
+              +(contour.mean - middle).toFixed(1),
+            ],
+          };
+          break;
+        }
+        if (fs.existsSync(scratch)) fs.unlinkSync(scratch);
+      }
+      if (++done % 25 === 0) {
+        console.log(`${done} / ${todo.length}`);
+        fs.writeFileSync(checkFile, JSON.stringify(checks, null, 2) + "\n");
+      }
+    });
+    const sorted = Object.fromEntries(
+      Object.entries(checks).sort(([x], [y]) => x.localeCompare(y)),
+    );
+    fs.writeFileSync(checkFile, JSON.stringify(sorted, null, 2) + "\n");
+    const all = Object.entries(checks),
+      passed = all.filter(([, c]) => c.ok);
+    console.log(
+      `${passed.length} of ${all.length} one-character clips have the shape of their tone.`,
+    );
+    for (const why of new Set(
+      all.filter(([, c]) => !c.ok).map(([, c]) => c.why),
+    ))
+      console.log(
+        `Left on the device voice (${why}): ${all
+          .filter(([, c]) => !c.ok && c.why === why)
+          .map(([text]) => text)
+          .join("")}`,
+      );
+    manifest();
   } else if (command === "voice") {
     fs.mkdirSync(voiceDir, { recursive: true });
     const limit = Number(flag("limit")) || Infinity,

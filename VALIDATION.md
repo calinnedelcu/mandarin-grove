@@ -1,5 +1,19 @@
 # Validation
 
+## 14 November 2026, evening: one-character recordings and publishing
+
+One-character words now have studio recordings where their tone could be confirmed by measurement: 234 of 266 (see `scripts/audio-check.json` and the Speech section of the README). A first attempt to verify them by transcribing each clip was abandoned: the transcriber returned nothing for 91 clips and confused near-homophones, so it could neither confirm nor reject a tone. The pitch measurement that replaced it found the real problem (bare single syllables often spoken with a falling, sentence-final contour) and is what decides whether a take is kept. **It is a measurement, not a human review.**
+
+The app is published on GitHub Pages by a workflow. The sub-path build was served locally and its page, bundle, fonts, audio, manifest and icons all loaded.
+
+## 14 November 2026, later: linked steps, reader modes, primer, installable web app
+
+`npx tsc --noEmit`, `npm test`, `npx expo export --platform web` and `npm run test:dom` all **pass**. The DOM test now also covers the end-of-day celebration, the primer and the Settings section of Me.
+
+Seen in a real browser: the celebration, the reader as a page and one line at a time, the first-time hints, the primer, a quiz question, Me in three sections with a planted grove, and Today, Path, Practice, the primer and a quiz at **320 px** wide. On the exported site the service worker registered, took control and cached the page, the bundle and the fonts on the first visit.
+
+**Not done:** opening the app with the network actually off; installing it on a phone (it is not hosted anywhere yet); any test on a physical device; and watching the animations (question slide-in, progress bars, falling leaves) play, since the preview pane was often not repainting.
+
 ## 14 November 2026: growing grove, Chengdu map, dialogues
 
 `npx tsc --noEmit`, `npm test`, `npx expo export --platform web` and `npm run test:dom` all **pass**. The DOM test now opens readings through the map's place sheets and checks that a dialogue shows its speakers. `npm run test:web` was not run and still describes the old layout.

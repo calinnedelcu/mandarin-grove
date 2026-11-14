@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GridPaper, GroveScene, ToneContour } from "./art";
+import { LeafFall } from "./LeafFall";
 import { Panda } from "./Panda";
 import { lessons, tone, words } from "./content";
 import { Progress, schedule, strength } from "./learning";
@@ -24,12 +25,14 @@ export function Review({
   audio,
   onGrade,
   onClose,
+  next,
 }: {
   queue: string[];
   p: Progress;
   audio: AudioController;
   onGrade: (grade: Grade) => void;
   onClose: () => void;
+  next?: { label: string; run: () => void } | null;
 }) {
   const [revealed, setRevealed] = useState(false);
   const total = useRef(queue.length).current;
@@ -218,6 +221,7 @@ export function Review({
                 style={[s.center, { flex: 1, paddingVertical: 60, gap: 14 }]}
               >
                 <GroveScene height={300} />
+                <LeafFall count={12} />
                 <Panda size={170} mood="happy" cheer />
                 <Text style={[s.heroTitle, { textAlign: "center" }]}>
                   Freshly watered.
@@ -230,7 +234,12 @@ export function Review({
                     : "Your words have a little room to grow."}
                 </Text>
                 <View style={{ width: "100%" }}>
-                  <Button label="Back to the grove" onPress={onClose} />
+                  {next && <Button label={next.label} onPress={next.run} />}
+                  <Button
+                    light={!!next}
+                    label="Back to the grove"
+                    onPress={onClose}
+                  />
                 </View>
               </View>
             )}

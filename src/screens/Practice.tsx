@@ -405,6 +405,21 @@ export function Practice({ app }: { app: AppCtx }) {
                     </Text>
                   </View>
                 )}
+                {open === "Tones" && (
+                  <Row
+                    title="Pinyin & tones in two minutes"
+                    caption="A short intro for beginners"
+                    onPress={start(app.openPrimer)}
+                    left={
+                      <GlyphTile
+                        glyph="音"
+                        size={44}
+                        wash={C.plumWash}
+                        ink={C.plum}
+                      />
+                    }
+                  />
+                )}
                 {open === "Sentences" && (
                   <Text style={[s.caption, { marginBottom: 10 }]}>
                     Lines from {story.title}.

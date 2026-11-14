@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 import { AppCtx } from "../app";
 import { dayPart, GridPaper, GroveScene } from "../art";
 import { Panda } from "../Panda";
@@ -50,6 +50,9 @@ export function Today({ app }: { app: AppCtx }) {
     hungry = !fedToday && p.xp > 0 && app.streak === 0,
     part = dayPart(date),
     night = part === "night";
+  // On a narrow phone the panda shrinks so it never covers the goal.
+  const { width } = useWindowDimensions(),
+    pandaSize = Math.min(168, Math.round(Math.min(width, 720) * 0.45));
   // Tapping the panda makes it hop and say something short.
   const [taps, setTaps] = useState(0),
     [line, setLine] = useState(-1);
@@ -151,7 +154,7 @@ export function Today({ app }: { app: AppCtx }) {
           style={{ position: "absolute", right: 4, bottom: 6 }}
         >
           <Panda
-            size={168}
+            size={pandaSize}
             bamboo={fedToday || p.xp === 0}
             pulse={taps}
             mood={full ? "happy" : hungry ? "hungry" : "calm"}
@@ -296,6 +299,18 @@ export function Today({ app }: { app: AppCtx }) {
             }
           />
         )}
+
+      {p.settings.level === 1 && !p.hints?.includes("primer") && p.xp < 150 && (
+        <Row
+          title="New to Chinese?"
+          caption="Pinyin and the four tones in two minutes"
+          label="Open the pinyin and tones intro"
+          onPress={app.openPrimer}
+          left={
+            <GlyphTile glyph="音" size={48} wash={C.plumWash} ink={C.plum} />
+          }
+        />
+      )}
 
       <Section title="Word of the day" zh="词" />
       <View style={[s.card, s.line, { gap: 16 }]}>

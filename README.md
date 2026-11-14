@@ -14,17 +14,25 @@ Open the QR code using an **Expo Go version compatible with SDK 57**, with your 
 
 ## The five tabs
 
-- **Today (今):** one card with the day's three steps — remember, read, practise — and a single button that starts the next one. The reading is pinned for the day, so finishing it does not swap it. The scene above it follows the hour (misty dawn, day, lantern-lit dusk, a moonlit night with fireflies) and its bamboo thickens as your deck grows. The panda is fed by the day's XP: it holds bamboo once you have earned some, is full at the goal, and is hungry after a missed day. Tap it and it says something short.
+- **Today (今):** one card with the day's three steps — remember, read, practise — and a single button that starts the next one. The reading is pinned for the day, so finishing it does not swap it. The scene above it follows the hour (misty dawn, day, lantern-lit dusk, a moonlit night with fireflies) and its bamboo thickens as your deck grows. The panda is fed by the day's XP: it holds bamboo once you have earned some, is full at the goal, and is hungry after a missed day. Tap it and it says something short. The three steps are linked: the end of a review or quiz offers the next step, and when all three are done the day is marked once with a short celebration.
 - **Path (路):** a map of Chengdu. Seven drawn places — the East Station, Kuanzhai Alley, People's Park, Jinli, the Panda Base, Chunxi Road and Sichuan University — sit along a road, and every reading belongs to one of them. Tapping a place opens a note about it and its readings at the chosen level; the order of the places is the order of the path. A **Library** view keeps search, topic and level filters, bookmarks and completed stories.
 - **Practice (练):** spaced review on top, then four drill areas that open as a short list — Words, Listening, Tones, Sentences — plus guided writing. Word drills run on a pool you choose (whole deck, due, weak, growing, strong, new). Words that have slipped appear as **Tricky words**.
 - **Words (词):** the 618-word dictionary, your own deck sorted weakest first with a strength bar, and a **Grammar** library with one pattern from every reading.
-- **Me (我):** rank, a bamboo stalk that grows a segment per streak day, **your grove** (one bamboo per planted word: shoots for new words, tall canes for strong ones), a **wardrobe** of five things the panda earns one rank at a time, a twelve-week activity grid, progress per HSK level, twelve badges, and settings with an on-device **backup code** to move progress between devices.
+- **Me (我):** three sections. *Panda*: rank, a bamboo stalk that grows a segment per streak day, **your grove** (one bamboo per planted word: shoots for new words, tall canes for strong ones), a **wardrobe** of five things the panda earns one rank at a time, *Progress*: a twelve-week activity grid, progress per HSK level and twelve badges. *Settings*: level, goal, reading and sound defaults, how to install the app, and an on-device **backup code** to move progress between devices.
+
+A reading opens as a whole page, or **one line at a time** (the stacked-cards button at the top) with large text and Back / Next that say each line. Each word can show its meaning underneath. A first-time card explains the three things to try, and a finished reading offers the next one at the same place.
 
 In a reading, tap **any Chinese word** for its meaning, pronunciation, tone shapes and the sentence it came from; plant it in your deck, or plant all key words at once. Sentence audio, four speeds, pinyin/English/traditional toggles, font size, spacing and word-echo tints are remembered. New in this version: **dictation** (hear a sentence, rebuild it), a **brush practice** queue built from your own deck, tone contours, a pinned daily plan, tricky words, the grammar library and backups.
 
 Nine readings are **dialogues** between two recurring characters, 乐乐 (Lele, who lives in Chengdu) and 大山 (Dashan, who is visiting), with the panda 胖胖. Each line shows who is speaking, and Dashan's lines have their own recorded voice.
 
 Grove Radio plays a shuffled, finite playlist at your level with skip, pause and a sleep timer. It stops in the background. News-style pieces are clearly labeled **original practice**, not live journalism. Placement is a six-question starting suggestion; you can change levels at any time.
+
+## Install on a phone
+
+`npx expo export --platform web` produces a static site in `dist/` that is also an installable web app: it has a manifest and home-screen icons (`public/`), and a service worker (`public/sw.js`) that caches the page, the bundle and the fonts on the first visit, so it then opens without a connection. Recordings are cached as they are played; a line never heard falls back to the device voice when offline. The app is published at **https://calinnedelcu.github.io/mandarin-grove/** by `.github/workflows/pages.yml`, which rebuilds it on every push to `main`. GitHub Pages serves it under `/mandarin-grove`, so the workflow sets `BASE_URL` (read by `app.config.js`); every other path in `public/` is relative, so the same build also works at a domain root.
+
+Beginners get a three-page **pinyin and tones** intro, offered on Today at HSK 1 and always available under Practice → Tones.
 
 ## Design
 
@@ -40,14 +48,17 @@ npm run fonts
 
 ## Speech and pronunciation
 
-Story sentences, multi-character words and the daily sayings have a **recorded studio voice** bundled with the app (generated once with ElevenLabs, then shipped as files in `assets/audio/voice`). They play offline, at 0.65×, 0.85×, 1× and 1.15× with the pitch kept. Single characters, and any text without a recording, use the device's own voice through `expo-speech`, requesting **zh-CN**: without context a synthetic voice cannot know which reading or tone of a lone character is meant. Settings → Sound switches the studio voice and the four interface sounds (right, wrong, finished, planted) on or off.
+Story sentences, words, the daily sayings, place names and the panda's lines have a **recorded studio voice** bundled with the app (generated once with ElevenLabs, then shipped as files in `assets/audio/voice`). In the dialogues Dashan has a second voice. They play offline, at 0.65×, 0.85×, 1× and 1.15× with the pitch kept. Settings → Sound switches the studio voice and the four interface sounds (right, wrong, finished, planted) on or off.
+
+One-character words are the hard case. Asked for a single bare syllable, the synthetic voice often lets sentence intonation win over the word's tone: a first tone that falls like a fourth, a fourth that stays high. So each one is recorded in several takes and a take is kept only if its **measured pitch has the shape of its tone** (`scripts/pitch.ts` tracks the pitch; `npm run audio -- singles` runs the takes; the outcome is in `scripts/audio-check.json`). 234 of 266 passed. The other 32 use the device's own voice through `expo-speech`: ten neutral-tone particles whose tone cannot be measured in isolation, three characters whose taught reading is not their usual one, and nineteen with no passing take. The check measures pitch, not a listener's judgement, and no clip has been reviewed by a Mandarin speaker.
 
 For the device voice, install a Mandarin speech voice in your device settings. On iPhone the recordings play even in silent mode; the device voice needs the ringer on. Web uses an installed local Mandarin voice and rejects remote-only browser voices; missing voices produce an actionable message.
 
 To regenerate audio after changing stories or the voice, set `ELEVENLABS_API_KEY` in your environment or in `.env.local` (ignored by git) and run:
 
 ```sh
-npm run audio -- voice    # only text without a file is generated
+npm run audio -- voice    # sentences and longer words; only text without a file is generated
+npm run audio -- singles  # one-character words, several takes each, kept only if the tone measures right (macOS)
 npm run audio -- sfx
 ```
 

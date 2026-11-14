@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Animated,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -9,6 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GridPaper, GroveScene, Stamp, ToneContour } from "./art";
+import { LeafFall } from "./LeafFall";
 import { Panda } from "./Panda";
 import { Exercise, exerciseXP, Session, toneLabels } from "./exercises";
 import { changeTone, checkTyped } from "./learning";
@@ -34,12 +37,15 @@ export function Quiz({
   onAnswer,
   onComplete,
   onClose,
+  after,
 }: {
   session: Session;
   audio: AudioController;
   onAnswer: (correct: boolean, q: Exercise) => void;
   onComplete: (score: number, total: number) => void;
   onClose: () => void;
+  /** What to offer after the result: the day's next step, or a next reading. */
+  after?: { label: string; run: () => void } | null;
 }) {
   const [index, setIndex] = useState(0),
     [chosen, setChosen] = useState<string | null>(null),
@@ -76,10 +82,30 @@ export function Quiz({
     }, 250);
     return () => clearInterval(timer);
   }, []);
+  const enter = useRef(new Animated.Value(1)).current;
   useEffect(() => {
     lock.current = false;
     setInput("");
     setBuilt([]);
+    // Each question slides in from the right.
+    enter.setValue(0);
+    Animated.timing(enter, {
+      toValue: 1,
+      duration: 240,
+      useNativeDriver: Platform.OS !== "web",
+    }).start();
+    // A listening question says itself once, without being asked.
+    const item = session.exercises[index],
+      spoken =
+        item &&
+        (item.mode === "listening" ||
+          item.mode === "tone-hearing" ||
+          item.mode === "dictation")
+          ? item.spoken
+          : undefined;
+    if (!spoken) return;
+    const timer = setTimeout(() => audio.say(spoken), 350);
+    return () => clearTimeout(timer);
   }, [index]);
   const q = session.exercises[index];
   if (!q) return null;
@@ -158,6 +184,7 @@ export function Quiz({
             {done ? (
               <View style={[s.center, { flex: 1, paddingVertical: 30 }]}>
                 <GroveScene height={300} />
+                {ratio >= 0.6 && <LeafFall count={12} />}
                 <Panda
                   size={170}
                   cheer={ratio >= 0.6}
@@ -211,11 +238,32 @@ export function Quiz({
                   )}
                 </View>
                 <View style={{ width: "100%" }}>
-                  <Button label="Back to the grove" onPress={onClose} />
+                  {after && <Button label={after.label} onPress={after.run} />}
+                  <Button
+                    light={!!after}
+                    label="Back to the grove"
+                    onPress={onClose}
+                  />
                 </View>
               </View>
             ) : (
-              <>
+              <Animated.View
+                style={{
+                  flexGrow: 1,
+                  opacity: enter.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.4, 1],
+                  }),
+                  transform: [
+                    {
+                      translateX: enter.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [18, 0],
+                      }),
+                    },
+                  ],
+                }}
+              >
                 <Text style={[s.eyebrow, { marginTop: 14 }]}>
                   {session.title.toUpperCase()}
                 </Text>
@@ -543,7 +591,7 @@ export function Quiz({
                     No timer. No rush. Breathe, notice, remember.
                   </Text>
                 )}
-              </>
+              </Animated.View>
             )}
           </ScrollView>
         </View>
