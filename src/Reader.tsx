@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import {
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stamp } from "./art";
 import {
@@ -78,8 +85,8 @@ export function Reader({
     [settingsOpen, setSettingsOpen] = useState(false),
     [translationLines, setTranslationLines] = useState<number[]>([]);
   const scroll = useRef<ScrollView>(null),
-    positions = useRef<Record<number, number>>({}),
-    page = useRef(0);
+    content = useRef<View>(null),
+    lines = useRef<Record<number, View | null>>({});
   const [line, setLine] = useState(
     Math.min(p.positions[lesson.id] || 0, lesson.story.length - 1),
   );
@@ -103,11 +110,29 @@ export function Reader({
     setTranslationLines([]);
     setLine(Math.min(p.positions[lesson.id] || 0, lesson.story.length - 1));
   }, [lesson.id]);
-  const scrollToLine = (i: number) =>
-    scroll.current?.scrollTo({
-      y: Math.max(0, page.current + (positions.current[i] || 0) - 24),
-      animated: true,
-    });
+  // The line's position is measured at the moment of scrolling. A position
+  // remembered from the first layout goes stale as soon as anything above it
+  // changes height (a hint dismissed, a translation hidden), and the scroll
+  // then lands that far off.
+  const scrollToLine = (i: number) => {
+    const node = lines.current[i],
+      inner = content.current;
+    if (!node || !inner) return;
+    const go = (y: number) =>
+      scroll.current?.scrollTo({ y: Math.max(0, y - 18), animated: true });
+    if (Platform.OS === "web") {
+      // Both boxes are read the same way, so a transform on an ancestor
+      // (the sheet sliding in) cannot put them out of step.
+      const box = (view: View) =>
+        (view as unknown as HTMLElement).getBoundingClientRect();
+      go(box(node).top - box(inner).top);
+    } else
+      node.measureLayout(
+        inner,
+        (_x, y) => go(y),
+        () => {},
+      );
+  };
   useEffect(() => {
     if (activeLine !== undefined) {
       setLine(activeLine);
@@ -377,409 +402,420 @@ export function Reader({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            {!focus && (
-              <>
-                <View
-                  style={{
-                    backgroundColor: tint.wash,
-                    borderRadius: 22,
-                    padding: 20,
-                    marginBottom: 14,
-                  }}
-                >
-                  <View style={[s.row, { alignItems: "flex-start" }]}>
-                    <GlyphTile
-                      glyph={glyphFor(lesson)}
-                      size={84}
-                      wash={C.card}
-                      ink={tint.ink}
-                    />
-                    <View style={[s.line, { gap: 10 }]}>
-                      {finished && <Stamp text="读" size={42} />}
-                      <IconButton
-                        name={
-                          p.bookmarks.includes(lesson.id)
-                            ? "bookmark"
-                            : "bookmark-outline"
-                        }
-                        color={
-                          p.bookmarks.includes(lesson.id) ? C.primary : C.ink
-                        }
-                        label={
-                          p.bookmarks.includes(lesson.id)
-                            ? "Remove story bookmark"
-                            : "Bookmark story"
-                        }
-                        onPress={() =>
-                          onProgress((prev) => ({
-                            ...prev,
-                            bookmarks: prev.bookmarks.includes(lesson.id)
-                              ? prev.bookmarks.filter((id) => id !== lesson.id)
-                              : [...prev.bookmarks, lesson.id],
-                          }))
-                        }
+            {/* One wrapper, so a line can be measured against the content. */}
+            <View ref={content} collapsable={false}>
+              {!focus && (
+                <>
+                  <View
+                    style={{
+                      backgroundColor: tint.wash,
+                      borderRadius: 22,
+                      padding: 20,
+                      marginBottom: 14,
+                    }}
+                  >
+                    <View style={[s.row, { alignItems: "flex-start" }]}>
+                      <GlyphTile
+                        glyph={glyphFor(lesson)}
+                        size={84}
+                        wash={C.card}
+                        ink={tint.ink}
                       />
-                    </View>
-                  </View>
-                  <Text style={[s.eyebrow, { marginTop: 14, color: tint.ink }]}>
-                    HSK {lesson.level} · {lesson.topic} · {lesson.format}
-                  </Text>
-                  <Text style={[s.heroTitle, { fontSize: 36, lineHeight: 38 }]}>
-                    {lesson.title}
-                  </Text>
-                  <Text style={[s.body, { marginTop: 6 }]}>
-                    {lesson.subtitle}
-                  </Text>
-                  <View style={{ marginTop: 12 }}>
-                    <Meter
-                      slim
-                      color={tint.ink}
-                      track="rgba(20,63,43,.12)"
-                      value={(cover.known / Math.max(1, cover.total)) * 100}
-                    />
-                    <Text style={s.caption}>
-                      {cover.known} of {cover.total} words in your deck
-                    </Text>
-                  </View>
-                  {versions.length > 1 && (
-                    <View style={[s.wrap, { marginTop: 14 }]}>
-                      {versions.map((v) => (
-                        <Chip
-                          key={v.id}
-                          label={`HSK ${v.level}`}
-                          selected={v.id === lesson.id}
-                          onPress={() => {
-                            audio.stop();
-                            setWord(null);
-                            onLesson(v);
-                            scroll.current?.scrollTo({ y: 0, animated: false });
-                          }}
+                      <View style={[s.line, { gap: 10 }]}>
+                        {finished && <Stamp text="读" size={42} />}
+                        <IconButton
+                          name={
+                            p.bookmarks.includes(lesson.id)
+                              ? "bookmark"
+                              : "bookmark-outline"
+                          }
+                          color={
+                            p.bookmarks.includes(lesson.id) ? C.primary : C.ink
+                          }
+                          label={
+                            p.bookmarks.includes(lesson.id)
+                              ? "Remove story bookmark"
+                              : "Bookmark story"
+                          }
+                          onPress={() =>
+                            onProgress((prev) => ({
+                              ...prev,
+                              bookmarks: prev.bookmarks.includes(lesson.id)
+                                ? prev.bookmarks.filter(
+                                    (id) => id !== lesson.id,
+                                  )
+                                : [...prev.bookmarks, lesson.id],
+                            }))
+                          }
                         />
-                      ))}
+                      </View>
+                    </View>
+                    <Text
+                      style={[s.eyebrow, { marginTop: 14, color: tint.ink }]}
+                    >
+                      HSK {lesson.level} · {lesson.topic} · {lesson.format}
+                    </Text>
+                    <Text
+                      style={[s.heroTitle, { fontSize: 36, lineHeight: 38 }]}
+                    >
+                      {lesson.title}
+                    </Text>
+                    <Text style={[s.body, { marginTop: 6 }]}>
+                      {lesson.subtitle}
+                    </Text>
+                    <View style={{ marginTop: 12 }}>
+                      <Meter
+                        slim
+                        color={tint.ink}
+                        track="rgba(20,63,43,.12)"
+                        value={(cover.known / Math.max(1, cover.total)) * 100}
+                      />
+                      <Text style={s.caption}>
+                        {cover.known} of {cover.total} words in your deck
+                      </Text>
+                    </View>
+                    {versions.length > 1 && (
+                      <View style={[s.wrap, { marginTop: 14 }]}>
+                        {versions.map((v) => (
+                          <Chip
+                            key={v.id}
+                            label={`HSK ${v.level}`}
+                            selected={v.id === lesson.id}
+                            onPress={() => {
+                              audio.stop();
+                              setWord(null);
+                              onLesson(v);
+                              scroll.current?.scrollTo({
+                                y: 0,
+                                animated: false,
+                              });
+                            }}
+                          />
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                  {!!stretch.length && (
+                    <View
+                      style={[s.notice, { marginTop: 0, marginBottom: 14 }]}
+                    >
+                      <Mixed style={s.caption}>
+                        {`A small stretch: ${stretch.join(" · ")}. Tap these words for a little help.`}
+                      </Mixed>
                     </View>
                   )}
-                </View>
-                {!!stretch.length && (
-                  <View style={[s.notice, { marginTop: 0, marginBottom: 14 }]}>
-                    <Mixed style={s.caption}>
-                      {`A small stretch: ${stretch.join(" · ")}. Tap these words for a little help.`}
-                    </Mixed>
+                </>
+              )}
+              {settingsOpen && (
+                <View style={s.card}>
+                  <Text style={s.cardTitle}>Make reading comfortable</Text>
+                  <View style={[s.wrap, { marginTop: 12 }]}>
+                    {(
+                      [
+                        "pinyin",
+                        "translation",
+                        "echo",
+                        "traditional",
+                        "gloss",
+                        "spacious",
+                      ] as const
+                    ).map((key) => (
+                      <Chip
+                        key={key}
+                        label={
+                          {
+                            pinyin: "Pinyin",
+                            translation: "English",
+                            echo: "Word echo",
+                            traditional: "Traditional",
+                            gloss: "Word meanings",
+                            spacious: "More spacing",
+                          }[key]
+                        }
+                        selected={settings[key]}
+                        onPress={() => set({ [key]: !settings[key] })}
+                      />
+                    ))}
                   </View>
-                )}
-              </>
-            )}
-            {settingsOpen && (
-              <View style={s.card}>
-                <Text style={s.cardTitle}>Make reading comfortable</Text>
-                <View style={[s.wrap, { marginTop: 12 }]}>
+                  <View style={[s.wrap, { marginTop: 12 }]}>
+                    {[22, 27, 32].map((fontSize) => (
+                      <Chip
+                        key={fontSize}
+                        label={`${fontSize} px`}
+                        selected={settings.fontSize === fontSize}
+                        onPress={() => set({ fontSize })}
+                      />
+                    ))}
+                  </View>
+                  <View style={[s.line, { marginTop: 14, gap: 14 }]}>
+                    {[
+                      [C.amberWash, "new"],
+                      [C.limeWash, "growing"],
+                      ["#BFE3B0", "strong"],
+                    ].map(([color, label]) => (
+                      <View key={label} style={[s.line, { gap: 6 }]}>
+                        <View
+                          style={{
+                            width: 16,
+                            height: 16,
+                            borderRadius: 5,
+                            backgroundColor: color,
+                            borderWidth: 1,
+                            borderColor: C.line,
+                          }}
+                        />
+                        <Text style={s.caption}>{label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <Text style={[s.caption, { marginTop: 8 }]}>
+                    Word echo tints the words already in your deck. Your
+                    settings are saved.
+                  </Text>
+                </View>
+              )}
+              {!seenHint && (
+                <View
+                  style={[
+                    s.card,
+                    { backgroundColor: C.amberWash, borderColor: C.amberWash },
+                  ]}
+                >
+                  <Text style={s.cardTitle}>Three things to try</Text>
                   {(
                     [
-                      "pinyin",
-                      "translation",
-                      "echo",
-                      "traditional",
-                      "gloss",
-                      "spacious",
+                      [
+                        "finger-print-outline",
+                        "Tap any word to see what it means and hear it.",
+                      ],
+                      [
+                        "leaf-outline",
+                        "Plant the words you want to keep. They come back for review.",
+                      ],
+                      [
+                        "play-outline",
+                        "Press play at the bottom to hear the whole story.",
+                      ],
                     ] as const
-                  ).map((key) => (
-                    <Chip
-                      key={key}
-                      label={
-                        {
-                          pinyin: "Pinyin",
-                          translation: "English",
-                          echo: "Word echo",
-                          traditional: "Traditional",
-                          gloss: "Word meanings",
-                          spacious: "More spacing",
-                        }[key]
-                      }
-                      selected={settings[key]}
-                      onPress={() => set({ [key]: !settings[key] })}
-                    />
-                  ))}
-                </View>
-                <View style={[s.wrap, { marginTop: 12 }]}>
-                  {[22, 27, 32].map((fontSize) => (
-                    <Chip
-                      key={fontSize}
-                      label={`${fontSize} px`}
-                      selected={settings.fontSize === fontSize}
-                      onPress={() => set({ fontSize })}
-                    />
-                  ))}
-                </View>
-                <View style={[s.line, { marginTop: 14, gap: 14 }]}>
-                  {[
-                    [C.amberWash, "new"],
-                    [C.limeWash, "growing"],
-                    ["#BFE3B0", "strong"],
-                  ].map(([color, label]) => (
-                    <View key={label} style={[s.line, { gap: 6 }]}>
-                      <View
-                        style={{
-                          width: 16,
-                          height: 16,
-                          borderRadius: 5,
-                          backgroundColor: color,
-                          borderWidth: 1,
-                          borderColor: C.line,
-                        }}
-                      />
-                      <Text style={s.caption}>{label}</Text>
+                  ).map(([icon, tip]) => (
+                    <View
+                      key={tip}
+                      style={[s.line, { gap: 10, marginTop: 10 }]}
+                    >
+                      <Icon name={icon} size={20} color={C.amberDeep} />
+                      <Text style={[s.body, { flex: 1 }]}>{tip}</Text>
                     </View>
                   ))}
+                  <Button
+                    light
+                    label="Got it"
+                    onPress={() =>
+                      onProgress((prev) => ({
+                        ...prev,
+                        hints: [...(prev.hints || []), "reader"],
+                      }))
+                    }
+                  />
                 </View>
-                <Text style={[s.caption, { marginTop: 8 }]}>
-                  Word echo tints the words already in your deck. Your settings
-                  are saved.
-                </Text>
-              </View>
-            )}
-            {!seenHint && (
-              <View
-                style={[
-                  s.card,
-                  { backgroundColor: C.amberWash, borderColor: C.amberWash },
-                ]}
-              >
-                <Text style={s.cardTitle}>Three things to try</Text>
-                {(
-                  [
-                    [
-                      "finger-print-outline",
-                      "Tap any word to see what it means and hear it.",
-                    ],
-                    [
-                      "leaf-outline",
-                      "Plant the words you want to keep. They come back for review.",
-                    ],
-                    [
-                      "play-outline",
-                      "Press play at the bottom to hear the whole story.",
-                    ],
-                  ] as const
-                ).map(([icon, tip]) => (
-                  <View key={tip} style={[s.line, { gap: 10, marginTop: 10 }]}>
-                    <Icon name={icon} size={20} color={C.amberDeep} />
-                    <Text style={[s.body, { flex: 1 }]}>{tip}</Text>
+              )}
+              {focus ? (
+                <>
+                  <Text style={[s.title, { marginBottom: 10 }]}>
+                    {lesson.title}
+                  </Text>
+                  <View
+                    style={[
+                      s.card,
+                      shadow,
+                      {
+                        minHeight: 300,
+                        justifyContent: "center",
+                        paddingVertical: 22,
+                      },
+                    ]}
+                  >
+                    {sentence(lesson.story[line], line, true)}
                   </View>
-                ))}
+                  <View
+                    style={[
+                      s.line,
+                      { justifyContent: "center", gap: 6, marginVertical: 6 },
+                    ]}
+                  >
+                    {lesson.story.map((_, i) => (
+                      <View
+                        key={i}
+                        style={{
+                          width: i === line ? 20 : 8,
+                          height: 8,
+                          borderRadius: 4,
+                          backgroundColor: i <= line ? C.primary : C.line,
+                        }}
+                      />
+                    ))}
+                  </View>
+                  <View style={s.row}>
+                    <Button
+                      light
+                      label="Back"
+                      disabled={line === 0}
+                      style={{ flex: 1 }}
+                      onPress={() => step(line - 1)}
+                    />
+                    {line < lesson.story.length - 1 ? (
+                      <Button
+                        label="Next line"
+                        style={{ flex: 1.6 }}
+                        onPress={() => step(line + 1)}
+                      />
+                    ) : (
+                      <Button
+                        label="To the questions →"
+                        style={{ flex: 1.6 }}
+                        onPress={onComprehension}
+                      />
+                    )}
+                  </View>
+                </>
+              ) : (
+                <>
+                  <Section
+                    title="A tiny reading"
+                    caption="Tap a word"
+                    zh="文"
+                  />
+                  <View
+                    style={[
+                      s.card,
+                      shadow,
+                      { paddingHorizontal: 6, paddingVertical: 8 },
+                    ]}
+                  >
+                    {lesson.story.map((item, i) => (
+                      <View
+                        key={i}
+                        ref={(node) => {
+                          lines.current[i] = node;
+                        }}
+                        collapsable={false}
+                        style={[
+                          s.sentence,
+                          activeLine === i && {
+                            borderColor: C.lime,
+                            backgroundColor: C.limeWash,
+                          },
+                        ]}
+                      >
+                        {sentence(item, i, false)}
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
+              <View style={[s.grammar, { marginTop: 8 }]}>
+                <Text style={s.eyebrow}>A pattern to notice</Text>
+                <Mixed style={{ marginTop: 8 }} zhSize={18}>
+                  {lesson.grammar}
+                </Mixed>
                 <Button
                   light
-                  label="Got it"
+                  icon={
+                    p.grammarSaved.includes(lesson.id)
+                      ? "bookmark"
+                      : "bookmark-outline"
+                  }
+                  label={
+                    p.grammarSaved.includes(lesson.id)
+                      ? "Pattern saved ✓"
+                      : "Save this grammar pattern +"
+                  }
                   onPress={() =>
                     onProgress((prev) => ({
                       ...prev,
-                      hints: [...(prev.hints || []), "reader"],
+                      grammarSaved: prev.grammarSaved.includes(lesson.id)
+                        ? prev.grammarSaved
+                        : [...prev.grammarSaved, lesson.id],
                     }))
                   }
                 />
               </View>
-            )}
-            {focus ? (
-              <>
-                <Text style={[s.title, { marginBottom: 10 }]}>
-                  {lesson.title}
-                </Text>
-                <View
-                  style={[
-                    s.card,
-                    shadow,
-                    {
-                      minHeight: 300,
-                      justifyContent: "center",
-                      paddingVertical: 22,
-                    },
-                  ]}
-                >
-                  {sentence(lesson.story[line], line, true)}
-                </View>
-                <View
-                  style={[
-                    s.line,
-                    { justifyContent: "center", gap: 6, marginVertical: 6 },
-                  ]}
-                >
-                  {lesson.story.map((_, i) => (
-                    <View
-                      key={i}
-                      style={{
-                        width: i === line ? 20 : 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: i <= line ? C.primary : C.line,
-                      }}
-                    />
-                  ))}
-                </View>
-                <View style={s.row}>
-                  <Button
-                    light
-                    label="Back"
-                    disabled={line === 0}
-                    style={{ flex: 1 }}
-                    onPress={() => step(line - 1)}
-                  />
-                  {line < lesson.story.length - 1 ? (
-                    <Button
-                      label="Next line"
-                      style={{ flex: 1.6 }}
-                      onPress={() => step(line + 1)}
-                    />
-                  ) : (
-                    <Button
-                      label="To the questions →"
-                      style={{ flex: 1.6 }}
-                      onPress={onComprehension}
-                    />
-                  )}
-                </View>
-              </>
-            ) : (
-              <>
-                {line > 0 && !audio.playing && (
-                  <Button
-                    light
-                    icon="arrow-down"
-                    label={`Continue at sentence ${line + 1}`}
-                    onPress={() => scrollToLine(line)}
-                  />
-                )}
-                <Section title="A tiny reading" caption="Tap a word" zh="文" />
-                <View
-                  onLayout={(e) => {
-                    page.current = e.nativeEvent.layout.y;
-                  }}
-                  style={[
-                    s.card,
-                    shadow,
-                    { paddingHorizontal: 6, paddingVertical: 8 },
-                  ]}
-                >
-                  {lesson.story.map((item, i) => (
-                    <View
-                      key={i}
-                      onLayout={(e) => {
-                        positions.current[i] = e.nativeEvent.layout.y;
-                      }}
-                      style={[
-                        s.sentence,
-                        activeLine === i && {
-                          borderColor: C.lime,
-                          backgroundColor: C.limeWash,
-                        },
-                      ]}
-                    >
-                      {sentence(item, i, false)}
-                    </View>
-                  ))}
-                </View>
-              </>
-            )}
-            <View style={[s.grammar, { marginTop: 8 }]}>
-              <Text style={s.eyebrow}>A pattern to notice</Text>
-              <Mixed style={{ marginTop: 8 }} zhSize={18}>
-                {lesson.grammar}
-              </Mixed>
-              <Button
-                light
-                icon={
-                  p.grammarSaved.includes(lesson.id)
-                    ? "bookmark"
-                    : "bookmark-outline"
-                }
-                label={
-                  p.grammarSaved.includes(lesson.id)
-                    ? "Pattern saved ✓"
-                    : "Save this grammar pattern +"
-                }
-                onPress={() =>
-                  onProgress((prev) => ({
-                    ...prev,
-                    grammarSaved: prev.grammarSaved.includes(lesson.id)
-                      ? prev.grammarSaved
-                      : [...prev.grammarSaved, lesson.id],
-                  }))
-                }
+              <Section
+                title="Key words"
+                caption={`${lesson.words.length - unplanted.length} / ${lesson.words.length} planted`}
+                zh="词"
               />
-            </View>
-            <Section
-              title="Key words"
-              caption={`${lesson.words.length - unplanted.length} / ${lesson.words.length} planted`}
-              zh="词"
-            />
-            {lesson.words.map((w) => (
-              <Pressable
-                key={w.id}
-                accessibilityRole="button"
-                accessibilityLabel={`Word ${w.hanzi}`}
-                onPress={() => lookup(w)}
-                style={({ pressed }) => [
-                  s.wordRow,
-                  { opacity: pressed ? 0.6 : 1 },
-                ]}
-              >
-                <View style={{ width: 108 }}>
-                  <Hanzi
-                    word={w}
-                    size={25}
-                    traditional={settings.traditional}
+              {lesson.words.map((w) => (
+                <Pressable
+                  key={w.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Word ${w.hanzi}`}
+                  onPress={() => lookup(w)}
+                  style={({ pressed }) => [
+                    s.wordRow,
+                    { opacity: pressed ? 0.6 : 1 },
+                  ]}
+                >
+                  <View style={{ width: 108 }}>
+                    <Hanzi
+                      word={w}
+                      size={25}
+                      traditional={settings.traditional}
+                    />
+                    <Pinyin word={w} />
+                  </View>
+                  <Text style={[s.body, { flex: 1 }]}>{w.meaning}</Text>
+                  <Icon
+                    name={p.cards[w.id] ? "leaf" : "add-circle-outline"}
+                    size={p.cards[w.id] ? 16 : 20}
+                    color={p.cards[w.id] ? C.primary : C.faint}
                   />
-                  <Pinyin word={w} />
-                </View>
-                <Text style={[s.body, { flex: 1 }]}>{w.meaning}</Text>
-                <Icon
-                  name={p.cards[w.id] ? "leaf" : "add-circle-outline"}
-                  size={p.cards[w.id] ? 16 : 20}
-                  color={p.cards[w.id] ? C.primary : C.faint}
+                </Pressable>
+              ))}
+              {unplanted.length > 0 && (
+                <Button
+                  light
+                  icon="leaf-outline"
+                  label={`Plant all ${unplanted.length} key words`}
+                  onPress={() =>
+                    onProgress((prev) =>
+                      unplanted.reduce((next, w) => saveWord(next, w.id), prev),
+                    )
+                  }
                 />
-              </Pressable>
-            ))}
-            {unplanted.length > 0 && (
+              )}
+              <Section title="Make the story yours" zh="练" />
+              {finished && next && (
+                <Button
+                  label={`Next reading: “${next.title}” →`}
+                  onPress={() => {
+                    scroll.current?.scrollTo({ y: 0, animated: false });
+                    onLesson(next);
+                  }}
+                />
+              )}
               <Button
-                light
-                icon="leaf-outline"
-                label={`Plant all ${unplanted.length} key words`}
-                onPress={() =>
-                  onProgress((prev) =>
-                    unplanted.reduce((next, w) => saveWord(next, w.id), prev),
-                  )
-                }
+                accent
+                light={finished && !!next}
+                label="Story comprehension →"
+                onPress={onComprehension}
               />
-            )}
-            <Section title="Make the story yours" zh="练" />
-            {finished && next && (
-              <Button
-                label={`Next reading: “${next.title}” →`}
-                onPress={() => {
-                  scroll.current?.scrollTo({ y: 0, animated: false });
-                  onLesson(next);
-                }}
-              />
-            )}
-            <Button
-              accent
-              light={finished && !!next}
-              label="Story comprehension →"
-              onPress={onComprehension}
-            />
-            <Button light label="Check what stuck →" onPress={onQuiz} />
-            <Text style={[s.caption, { marginTop: 12, textAlign: "center" }]}>
-              Comprehension checks the story. Word practice mixes meaning,
-              tones, and listening. Either one finishes the reading. Original
-              practice, added {lesson.published}.
-            </Text>
-            <View style={s.notice}>
-              <Text style={s.cardTitle}>Say it out loud</Text>
-              <Text style={[s.body, { marginTop: 6 }]}>
-                Read one sentence, listen, then say it again. Hide the English
-                for an extra challenge.
+              <Button light label="Check what stuck →" onPress={onQuiz} />
+              <Text style={[s.caption, { marginTop: 12, textAlign: "center" }]}>
+                Comprehension checks the story. Word practice mixes meaning,
+                tones, and listening. Either one finishes the reading. Original
+                practice, added {lesson.published}.
               </Text>
-              <Text style={s.caption}>
-                Your device reads Mandarin aloud; speaking practice is self
-                guided.
-              </Text>
+              <View style={s.notice}>
+                <Text style={s.cardTitle}>Say it out loud</Text>
+                <Text style={[s.body, { marginTop: 6 }]}>
+                  Read one sentence, listen, then say it again. Hide the English
+                  for an extra challenge.
+                </Text>
+                <Text style={s.caption}>
+                  Your device reads Mandarin aloud; speaking practice is self
+                  guided.
+                </Text>
+              </View>
             </View>
           </ScrollView>
           <View
@@ -817,9 +853,18 @@ export function Reader({
               </Pressable>
               <View style={{ flex: 1 }}>
                 <View style={s.row}>
-                  <Text style={s.caption} numberOfLines={1}>
-                    Line {line + 1} of {lesson.story.length}
-                  </Text>
+                  {/* Tapping the counter brings the current line back into view.
+                      It lives here, in the bar, so it never moves the text. */}
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`Go to line ${line + 1}`}
+                    onPress={() => scrollToLine(line)}
+                    hitSlop={10}
+                  >
+                    <Text style={s.caption} numberOfLines={1}>
+                      Line {line + 1} of {lesson.story.length}
+                    </Text>
+                  </Pressable>
                   <View style={[s.line, { gap: 4 }]}>
                     {rates.map((rate) => (
                       <Pressable
